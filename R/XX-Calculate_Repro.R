@@ -29,6 +29,40 @@ offspring_info <- captures %>%
   select(id, Born) %>%
   right_join(b_ped) 
 
+# Get number of lost litters for female bears
+# Get dams with only cubs having known birth dates
+dams_dat <- offspring_info %>%
+  rename('BearID' = dam) %>%
+  filter(! is.na(BearID) & ! is.na(Born)) %>%
+  select(! sire) %>%
+  distinct()
+
+# Calculate intervals between births for all bear IDs
+repro_dat_int <- data.frame()
+for(i in unique(dams_dat$BearID)) {
+  
+  repro_dat_i <- dams_dat %>%
+    filter(BearID == i) %>%
+    arrange(Born) %>%
+    distinct()
+  
+  # Skip bear if less than two recorded litters
+  if(nrow(repro_dat_i) < 2) next
+  
+  repro_dat_i_int <- repro_dat_i %>%
+    # Get birth intervals
+    mutate(BirthInt = Born - lag(Born)) %>%
+    # Filter only intervals > 0 and < 3 years
+    filter(BirthInt > 0 & BirthInt < 3)
+  
+  repro_dat_int <- rbind(repro_dat_int, repro_dat_i_int)
+  
+}
+# Lost litters
+lost_litters <- repro_dat_int %>%
+  group_by(BearID) %>%
+  summarize(LostLitts = n())
+
 # Function to get age at first repro for either entire population or just
 # bears with epigenetic age data
 firstRepro <- function(cubdat, epidat, ageinfo, wholepop = T) {
@@ -106,10 +140,17 @@ firstRepro <- function(cubdat, epidat, ageinfo, wholepop = T) {
 
 # Get reproductive info for the entire population
 whole_population <- firstRepro(cubdat = offspring_info, 
-                               epidat = epi_age, ageinfo = age_info, wholepop = T)
+                               epidat = epi_age, ageinfo = age_info, wholepop = T) %>%
+  # Add lost litters
+  left_join(lost_litters) %>%
+  mutate(LostLitts = ifelse(is.na(LostLitts) & Sex == 'F', 0, LostLitts))
+
 # And bears with age samples only
 epi_population <- firstRepro(cubdat = offspring_info, 
-                             epidat = epi_age, ageinfo = age_info, wholepop = F)
+                             epidat = epi_age, ageinfo = age_info, wholepop = F) %>%
+  # Add lost litters
+  left_join(lost_litters) %>%
+  mutate(LostLitts = ifelse(is.na(LostLitts) & Sex == 'F', 0, LostLitts))
 
 # Save
 saveRDS(whole_population, 'output/lh_info_pop.rds')
