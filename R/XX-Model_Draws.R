@@ -11,10 +11,14 @@ library(performance)
 lh_pop_dat <- readRDS('output/lh_info_pop.rds')
 lh_epi_dat <- readRDS('output/lh_info_epi.rds')
 # Limit life history data to only reliable sampling dates
-lh_epi_dat_trunc <- lh_epi_dat %>%
-  filter(Born %in% 1980:2000)
 lh_pop_dat_trunc <- lh_pop_dat %>%
   filter(Born %in% 1980:2000)
+# Load aging data
+epi_dat <- readRDS('input/PB_clock_ages2.rds') %>%
+  rename('Year' = yr) %>%
+  mutate(Born = Year - round(Age),
+         across(c(Year, AgeAccel, Age, Born), 
+                list(sc = function(x) as.vector(scale(x, center = T)))))
 
 # List of models to load
 mods <- list.files('models/', pattern = 'mod')
@@ -24,20 +28,6 @@ for(n in 1:length(mods)) {
   mod <- readRDS(paste0('models/', mods[n]))
   assign(str_extract(mods[n], '[^.]+'), mod)
 }
-
-# Get predicted draws from posteriors for plotting
-# Acceleration ~ age at first repro
-# accel_fr_draws <- lh_epi_dat |>
-#   data_grid(FirstRepro = seq_range(FirstRepro, n = 1000), Sex = c('F', 'M'), BearID = NA)  |>
-#   add_epred_draws(accel_fr_mod, ndraws = 1000)
-# # Acceleration ~ year
-# accel_year_draws <- epi_dat |>
-#   data_grid(yr = seq_range(yr, n = 1000), Sex = c('M', 'F'), BearID = NA)  |>
-#   add_epred_draws(accel_year_mod, ndraws = 1000)
-# # Acceleration ~ growth
-# accel_growthr_draws <- growth_rates |>
-#   data_grid(mean_BearSlope = seq_range(mean_BearSlope, n = 1000), Sex = c('F', 'M'), BearID = NA)  |>
-#   add_epred_draws(accel_growthr_mod, ndraws = 1000)
 
 # Ice-free days ~ time
 ice_free_draws <- ice_free_mod %>%
@@ -64,6 +54,23 @@ accel_yr_draws <- accel_yr_mod %>%
   rename('slope' = b_Year_sc) %>%
   select(slope, .lower, .upper) %>%
   mutate(cl = c(0.9, 0.95)) %>%
+  pivot_wider(names_from = cl, values_from = c(.lower, .upper))
+
+# Age acceleration ~ YOB
+accel_born_fixed <- accel_born_mod %>%
+  spread_draws(b_Born_sc, `b_Born_sc:SexM`) %>%
+  mutate(b_Born_sc_M = b_Born_sc + `b_Born_sc:SexM`)
+accel_born_M <- accel_born_fixed %>%
+  median_qi(b_Born_sc_M, .width = c(0.9, 0.95)) %>%
+  rename('slope' = b_Born_sc_M) %>%
+  select(slope, .lower, .upper) %>%
+  mutate(sex = 'M', cl = c(0.9, 0.95))
+accel_born_draws <- accel_born_fixed %>%
+  median_qi(b_Born_sc, .width = c(0.9, 0.95)) %>%
+  rename('slope' = b_Born_sc) %>%
+  select(slope, .lower, .upper) %>%
+  mutate(sex = 'F', cl = c(0.9, 0.95)) %>%
+  rbind(accel_born_M) %>%
   pivot_wider(names_from = cl, values_from = c(.lower, .upper))
 
 # Age acceleration ~ age at first reproduction
@@ -118,7 +125,7 @@ accel_gr_draws <- accel_gr_fixed %>%
   pivot_wider(names_from = cl, values_from = c(.lower, .upper))
 
 # Lifetime reproductive success ~ age acceleration
-lrs_accel_draws <- lh_epi_dat_trunc |>
+lrs_accel_draws <- lh_epi_dat |>
   data_grid(AgeAccel = seq_range(AgeAccel, n = 1000))  |>
   add_epred_draws(object = lrs_accel_mod, ndraws = 1000)
 
@@ -127,87 +134,97 @@ lrs_yr_draws <- lh_pop_dat_trunc |>
   data_grid(Born = seq_range(Born, n = 1000))  |>
   add_epred_draws(object = lrs_yr_mod, ndraws = 1000)
 
-# Calculate the contrast in age acceleration between a bear born in 2023 and 
-# one born in 1988
-# Get posterior predictive draws from model for 1988 and 2023
-ppd_88 <- posterior_predict(accel_yr_mod, newdata = data.frame(BearID = NA, Sex = NA, yr = 1988))
-ppd_23 <- posterior_predict(accel_yr_mod, newdata = data.frame(BearID = NA, Sex = NA, yr = 2023))
-# Make data frame with differnce
-contrast_accel <- data.frame(years = '2023-1988', 
-                             accel = (ppd_23 - ppd_88)[,1])
-# Get 95% percentiles for contrast
-quantile(contrast_accel$accel, probs = c(0.025, 0.5, 0.975))
-
-# Get posterior predictions for interaction effect in LRS ~ afr*year of birth model
-# ************* Need to figure out how to get the expected effect of the interaction in
-# different years
-# 
-# This shows conditional effects of the interaction
-foo <- conditional_effects(lrs_fr_mod)$`FirstRepro_sc:Born_sc`
-
-
-
-c_eff_lh <- function(mod, sc_bdates, afr, p) {
+# Calculate the contrast in age acceleration between a bear born in 2010 and 
+# one born in 1960 for males and females
+# Get posterior predictive draws from model (scaled vals) and unscale
+for(sex in c('F', 'M')) {
   
-  # Conditional effects from model with specified probability
-  ce <- conditional_effects(lrs_fr_mod, prob = p, conditions = sc_bdates)$`FirstRepro_sc:Born_sc` %>%
-    # Scale the conditional effects between -1 and 1
-    mutate(across(c(estimate__:upper__), 
-                  list(sc = function(x) as.vector(scales::rescale(x, to = c(0, 1)))))) %>%
-    # Unscale birth dates and ages at first reproduction
-    mutate(Born = round(Born_sc * sd(lh_pop_dat$Born) + mean(lh_pop_dat$Born)),
-           FirstRepro = round(FirstRepro_sc * sd(lh_pop_dat$FirstRepro) + mean(lh_pop_dat$FirstRepro))) %>%
-    # Filter out specified ages at first reproduction
-    filter(FirstRepro %in% afr) %>%
-    # Summarize effects by birth date and age at first repro
-    group_by(Born, FirstRepro) %>%
-    summarize(LRS = mean(estimate___sc), lower = mean(upper___sc), upper = mean(lower___sc)) %>%
-    # Add column for probability
-    mutate(probs = p)
+  ppd_1965 <- posterior_predict(accel_born_mod, 
+                                newdata = data.frame(BearID = NA, 
+                                                     Sex = sex, 
+                                                     Born_sc = -2.43), 
+                                re.form = NA) * sd(epi_dat$AgeAccel) + mean(epi_dat$AgeAccel) 
+  ppd_2013 <- posterior_predict(accel_born_mod, 
+                                newdata = data.frame(BearID = NA, 
+                                                     Sex = sex, 
+                                                     Born_sc = 2.58), 
+                                re.form = NA) * sd(epi_dat$AgeAccel) + mean(epi_dat$AgeAccel) 
   
-  return(ce)
+  # Make data frame with difference
+  contrast_accel <- data.frame(years = '2013-1965', 
+                               accel = (ppd_2013 - ppd_1965)[,1])
+  # Get 95% percentiles for contrast and print
+  cat(sex, quantile(contrast_accel$accel, probs = c(0.025, 0.5, 0.975)), '\n')
   
 }
 
-lrs_afr_coneffs <- c_eff_lh(mod = lrs_fr_mod, sc_bdates = c(-0.45, 0.45, 1.34), afr = c(4, 15), p = 0.95)
+# Calculate change in temp and ice-free days 88-2016
+# 1988 ice
+ice_free_88 <- posterior_predict(ice_free_mod, 
+                              newdata = data.frame(Year_sc = -0.9)) * sd(ice_dat$IceFree) + mean(ice_dat$IceFree)
+# 2016 ice
+ice_free_16 <- posterior_predict(ice_free_mod, 
+                                 newdata = data.frame(Year_sc = 1.5)) * sd(ice_dat$IceFree) + mean(ice_dat$IceFree)
+# Get 95% percentiles for contrast and print
+quantile((ice_free_16 - ice_free_88)[,1], probs = c(0.025, 0.5, 0.975))
 
-# # New AFR data sequence to predict
-# fr_seq <- seq(from = min(lh_pop_dat_trunc$FirstRepro_sc), 
-#               to = max(lh_pop_dat_trunc$FirstRepro_sc), 
-#               length.out = 300)
-# 
-# # Define value of Born_sc variable in 1980, 1990, and 2000
-# b_80 <- lh_pop_dat_trunc %>%
-#   filter(Born == 1980) %>%
-#   head(1) %>%
-#   pull(Born_sc)
-# b_90 <- lh_pop_dat_trunc %>%
-#   filter(Born == 1990) %>%
-#   head(1) %>%
-#   pull(Born_sc)
-# b_00 <- lh_pop_dat_trunc %>%
-#   filter(Born == 2000) %>%
-#   head(1) %>%
-#   pull(Born_sc)
-# # Create new data for predicting LRS ~ AFR for different years of birth
-# # yob = 1980
-# new_data_80 <- data.frame(FirstRepro_sc = fr_seq, Born_sc = b_80)
-# # yob = 1990
-# new_data_90 <- data.frame(FirstRepro_sc = fr_seq, Born_sc = b_90)
-# # yob = 2000
-# new_data_00 <- data.frame(FirstRepro_sc = fr_seq, Born_sc = b_00)
-# 
-# pp_data <- data.frame(FirstRepro = fr_seq, 
-#                       LRS80 = colMeans(posterior_predict(lrs_fr_mod, new_data_80)),
-#                       LRS90 = colMeans(posterior_predict(lrs_fr_mod, new_data_90)),
-#                       LRS00 = colMeans(posterior_predict(lrs_fr_mod, new_data_00)))
-# # Plot lines for interaction
-# ggplot() +
-#   geom_jitter(data = lh_pop_dat_trunc, aes(x = FirstRepro_sc, y = LRS), alpha = 0.3, colour = 'black') +
-#   geom_line(data = pp_data, aes(x = FirstRepro, y = LRS80), colour = '#e9b91c') +
-#   geom_line(data = pp_data, aes(x = FirstRepro, y = LRS90), colour = '#ce7b12') +
-#   geom_line(data = pp_data, aes(x = FirstRepro, y = LRS00), colour = '#ae1324') +
-#   theme(panel.background = element_rect(colour = 'black', fill = 'white'))
+# 1988 temp
+temp_88 <- posterior_predict(temp_mod, 
+                                 newdata = data.frame(Year_sc = -0.9)) * sd(temp_dat$Temp) + mean(temp_dat$Temp)
+# 2016 ice
+temp_16 <- posterior_predict(temp_mod, 
+                                 newdata = data.frame(Year_sc = 1.59)) * sd(temp_dat$Temp) + mean(temp_dat$Temp)
+# Get 95% percentiles for contrast and print
+quantile((temp_16 - temp_88)[,1], probs = c(0.025, 0.5, 0.975))
+
+# Calculate change in LRS from age acceleration -5 to 5 years
+# -5 age acceleration
+young_accel <- posterior_predict(lrs_accel_mod, 
+                                 newdata = data.frame(AgeAccel = 0))
+# +5 age acceleration
+old_accel <- posterior_predict(lrs_accel_mod, 
+                                 newdata = data.frame(AgeAccel = 10))
+# Get 95% percentiles for contrast and print
+quantile((old_accel - young_accel)[,1], probs = c(0.025, 0.5, 0.975))
+
+# Get posterior predictions for interaction effects in LRS ~ afr*year of birth model and LRS ~ age accel*year of birth model
+
+# Make levels for conditional effects
+condition_lvs_afr <- list(
+  # Bears born in 1980, 1990, and 2000
+  Born_sc = c(-0.45, 0.45, 1.34),
+  # AFR ranging from 4-15
+  FirstRepro_sc = seq(from = -1.75, to = 1.15, by = 0.005)
+)
+
+condition_lvs_accel <- list(
+  # Bears born in 1980, 1990, and 2000
+  Born_sc = c(-0.78, 0.33, 1.5),
+  # AFR ranging from 4-15
+  AgeAccel_sc = seq(from = -2.2, to = 2.8, by = 0.005)
+)
+
+# Conditional effects from LRS ~ afr*year of birth
+lrs_afr_coneffs <- conditional_effects(lrs_fr_mod, prob = 0.95, int_conditions = condition_lvs_afr)$`FirstRepro_sc:Born_sc` %>%
+  # Unscale birth dates and ages at first reproduction
+  mutate(Born = round(Born_sc * sd(lh_pop_dat$Born) + mean(lh_pop_dat$Born)),
+         FirstRepro = round(FirstRepro_sc * sd(lh_pop_dat$FirstRepro) + mean(lh_pop_dat$FirstRepro)))
+
+# Conditional effects from LRS ~ age accel*year of birth
+lrs_accel_coneffs <- conditional_effects(lrs_accel_yr_mod, prob = 0.95, int_conditions = condition_lvs_accel)$`AgeAccel_sc:Born_sc` %>%
+  # Unscale birth dates and ages at first reproduction
+  mutate(Born = round(Born_sc * sd(lh_epi_dat$Born) + mean(lh_epi_dat$Born)),
+         AgeAccel = round(AgeAccel_sc * sd(lh_epi_dat$AgeAccel) + mean(lh_epi_dat$AgeAccel)))
+  
+ggplot(lrs_afr_coneffs, aes(x = FirstRepro_sc, y = estimate__, fill = factor(Born), colour = factor(Born))) + 
+  scale_x_continuous(breaks = c(-1.38, -0.0725, 1.13), labels = c(5, 10, 15)) +
+  geom_line() + 
+  geom_ribbon(aes(x = FirstRepro_sc, ymin = lower__, ymax = upper__), alpha = 0.5, colour = NA)
+
+ggplot(lrs_accel_coneffs, aes(x = AgeAccel_sc, y = estimate__, fill = factor(Born), colour = factor(Born))) + 
+  # scale_x_continuous(breaks = c(-1.38, -0.0725, 1.13), labels = c(5, 10, 15)) +
+  geom_line() + 
+  geom_ribbon(aes(x = AgeAccel_sc, ymin = lower__, ymax = upper__), alpha = 0.5, colour = NA)
 
 # Save posterior draws
 saveRDS(temp_draws, 'models/temp_draws.rds')
@@ -215,8 +232,10 @@ saveRDS(ice_free_draws, 'models/ice_free_draws.rds')
 saveRDS(accel_fr_draws, 'models/accel_fr_draws.rds')
 saveRDS(repro_yr_draws, 'models/repro_yr_draws.rds')
 saveRDS(accel_yr_draws, 'models/accel_yr_draws.rds')
+saveRDS(accel_born_draws, 'models/accel_born_draws.rds')
 saveRDS(accel_gr_draws, 'models/accel_gr_draws.rds')
 saveRDS(lrs_accel_draws, 'models/lrs_accel_draws.rds')
+saveRDS(lrs_accel_coneffs, 'models/lrs_accel_coneffs.rds')
 saveRDS(lrs_yr_draws, 'models/lrs_yr_draws.rds')
 saveRDS(lrs_afr_coneffs, 'models/lrs_afr_coneffs.rds')
 
