@@ -1,6 +1,4 @@
 data_type sex	birth_date_range	sample_timespan	N_samples	notes
-Ice-free days	NA	NA	1979-2018	NA	derived from sea-ice break-up and freeze-up dates from ECCC
-Global mean surface temp	NA	NA	1880-2022	NA	data from https://data.giss.nasa.gov/gistemp/
 Lifetime reproductive success	female	1980-2000	NA	402	truncated birth dates b/c sampling pre-1980 inconsistent and post-2000 bears haven't lived full reproductive lifespan
 Lifetime reproductive success	male	1980-2000	NA	226	truncated birth dates b/c sampling pre-1980 inconsistent and post-2000 bears haven't lived full reproductive lifespan
 Age at first reproduction	male	1962-2014	NA	380	NA
