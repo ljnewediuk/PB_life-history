@@ -13,9 +13,12 @@
 # Big folders
 figures/
 models/
+iscans/
 
-# Exploratory folders
+# Hidden/embargoed files and folders
 extras/
+input/bearPED.csv
+input/bear_capture_info.csv
 
 # Example code in package build process
 *-Ex.R
