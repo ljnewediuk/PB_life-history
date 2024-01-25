@@ -10,10 +10,11 @@
 .Ruserdata
 .DS_Store
 
-# Big folders
+# Big files and folders
 figures/
 models/
 iscans/
+input/HorvathMammal40.Manifest.May2020.manifest.csv
 
 # Hidden/embargoed files and folders
 extras/
