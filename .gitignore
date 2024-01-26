@@ -19,6 +19,7 @@ input/HorvathMammal40.Manifest.May2020.manifest.csv
 # Hidden/embargoed files and folders
 extras/
 input/bearPED.csv
+input/breeding.csv
 input/bear_capture_info.csv
 
 # Example code in package build process
