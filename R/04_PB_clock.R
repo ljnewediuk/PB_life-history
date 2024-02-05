@@ -143,18 +143,16 @@ age_df <- meth_betas %>%
   select(SampleID:chip.ID.loc, AgePredict)
 
 # Get betas and ages
-betasLoop <- meth_betas_train_m
-ageLoop <- as.numeric(age_df[age_df$SampleID %in% meth_betas_train$SampleID ,]$Age)
+betas_vec <- meth_betas_train_m
+age_vec <- as.numeric(age_df[age_df$SampleID %in% meth_betas_train$SampleID ,]$Age)
 
 # Make sure ages for training match training samples
 age_df[age_df$SampleID %in% meth_betas_train$SampleID ,]$chip.ID.loc == rownames(meth_betas_train_m)
 
-set.seed(2)
-
 # 6 Fit clock and predict on training data ====
 
 # Glmnet model (training betas ~ ages)
-cvfit <- cv.glmnet(betasLoop, ageLoop, nfolds = 10, alpha = .5)
+cvfit <- cv.glmnet(betas_vec, age_vec, nfolds = 10, alpha = .5)
 
 # Add predictions as column to ages in training data
 age_preds <- age_df %>%
