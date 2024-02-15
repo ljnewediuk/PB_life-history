@@ -28,7 +28,7 @@ library(kableExtra)
 #===============================================================================
 #read in the pedigree file (id, dam, sire)
 #bearPED.csv corrected for dams and sires issues (don't use WH_ped.txt)
-bearPED<- read.csv("bearPED.csv", header=T)
+bearPED<- read.csv("input/bearPED.csv", header=T)
 colnames(bearPED)[1] <- "animal"
 bearPED$animal<-as.factor(bearPED$animal)
 bearPED$dam<-as.factor(bearPED$dam)
