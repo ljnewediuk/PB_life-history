@@ -193,8 +193,8 @@ model_LRS <- MCMCglmm(LRS ~ Sex,
                       random = ~animal + dam + Born,
                       ginv = list(animal = Ainv), 
                       family="poisson", data = breeding_ped, 
-                      nitt = 80000, thin = 10, 
-                      burnin = 10000, prior = priorP3)
+                      nitt = 8000, thin = 10, 
+                      burnin = 1000, prior = priorP3)
 saveRDS(model_LRS, file = "mcmc_LRS.rds")
 
 model_LRS <- readRDS(file="mcmc_LRS.rds")
