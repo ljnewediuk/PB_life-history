@@ -1,9 +1,19 @@
 
+# 05 - Models ====
+
+# Author: Levi Newediuk
+
+#===============================================================================
+#POLAR BEAR EPIGENETICS
+#Fit Bayesian GLMs to test hypotheses in MS
+#===============================================================================
+
+
+#------------------------------------------------------------------------------
+#load packages
 library(tidyverse)
 library(tidybayes)
 library(brms)
-
-# 06 - brms models
 
 # Fit models for MS:
 # 

@@ -1,8 +1,18 @@
 
+# 03 - Polar bear clock ====
+
+# Author: Levi Newediuk
+
+#===============================================================================
+#POLAR BEAR EPIGENETICS
+#Fit polar bear clock
+#===============================================================================
+
+
+#------------------------------------------------------------------------------
+#load packages
 library(tidyverse)
 library(glmnet)
-
-# 04 - Polar bear clock
 
 # We have an initial sample of 288 bears. We are removing specific individuals
 # that might bias the clock (failed/poor quality samples, related individuals) 

@@ -1,8 +1,18 @@
 
+# 02 - EWAS ====
+
+# Author: Levi Newediuk
+
+#===============================================================================
+#POLAR BEAR EPIGENETICS
+#Epigenome-wide association survey to select starting CpG sites for clock
+#===============================================================================
+
+
+#------------------------------------------------------------------------------
+#load packages
 library(tidyverse)
 library(limma)
-
-# 03 - Epigenome-wide association survey
 
 # Remove any probes correlated (p < 0.05) with tissue and sex, and keep top
 # ~ 10% of probes correlated with age. We used this subset of probes for 

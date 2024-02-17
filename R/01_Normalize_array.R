@@ -1,9 +1,19 @@
 
+# 01 - Normalize array ====
+
+# Author: Levi Newediuk
+
+#===============================================================================
+#POLAR BEAR EPIGENETICS
+#Normalize methylation data
+#===============================================================================
+
+
+#------------------------------------------------------------------------------
+#load packages
 library(tidyverse)
 library(sesame)
 library(minfi)
-
-# 01 - Normalize betas
 
 # Get normalized betas using Minfi, transpose betas, then save 
 # the transposed betas and sample sheet with updated columns for aging. 

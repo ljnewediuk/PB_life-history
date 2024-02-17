@@ -1,4 +1,16 @@
 
+# 07 - Plots ====
+
+# Author: Levi Newediuk
+
+#===============================================================================
+#POLAR BEAR EPIGENETICS
+#Plots from manuscript (2-4) and posterior predictive checks in supplement (5)
+#===============================================================================
+
+
+#------------------------------------------------------------------------------
+#load packages
 library(tidyverse)
 library(cowplot)
 library(ggdist)

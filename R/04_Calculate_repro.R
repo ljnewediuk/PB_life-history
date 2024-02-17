@@ -1,7 +1,20 @@
 
-library(tidyverse)
+# 04 - Calculate reproduction ====
 
-# 05 - Reproduction/life history data
+# Author: Levi Newediuk
+
+#===============================================================================
+#POLAR BEAR EPIGENETICS
+#Calculate lifetime reproductive success and life history data
+#===============================================================================
+
+# NOTE: bear_capture_info.csv and bearPED.csv are embargoed files due to 
+# restrictions on data sharing. The script will break without these files, but
+# lh_info_pop.rds and lh_info_epi.rds are available for running subsequent scripts.
+
+#------------------------------------------------------------------------------
+#load packages
+library(tidyverse)
 
 # Calculate some metrics related to life history and reproduction from pedigree.
 # Some things of general interest (interval between births, estimated numbers
@@ -23,7 +36,7 @@ epi_age <- readRDS('output/PB_clock_ages.rds')
 # Load pedigree (embargoed file)
 b_ped <- read.csv('input/bearPED.csv')
 
-# Load capture info for birth years (embargoed file)
+# Load capture info for birth years
 captures <- read.csv('input/bear_capture_info.csv') 
 
 # 2 Organize data ====

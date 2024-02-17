@@ -1,8 +1,18 @@
 
+# 04 - Fitted effects ====
+
+# Author: Levi Newediuk
+
+#===============================================================================
+#POLAR BEAR EPIGENETICS
+#Extract fitted values from Bayesian GLMs
+#===============================================================================
+
+
+#------------------------------------------------------------------------------
+#load packages
 library(tidyverse)
 library(ggdist)
-
-# 07 - Extract fitted values from models
 
 # 1 Load data ====
 
