@@ -203,11 +203,11 @@ model_LRS <- MCMCglmm(LRS ~ Sex,
                       burnin = 1000, prior = priorP3)
 # saveRDS(model_LRS, file = "mcmc_LRS.rds")
 
-model_LRS <- readRDS(file="mcmc_LRS.rds")
+model_LRS <- readRDS(file="output/mcmc_LRS.rds")
 #------------------------------------------------------------------------------
 
 #---------------------------CHECK MODEL PLOTS----------------------------------
-model_LRS <- readRDS(file="mcmc_LRS.rds")
+model_LRS <- readRDS(file="output/mcmc_LRS.rds")
 
 #model summary-----------------------------------------------------------------
 summary(model_LRS)
