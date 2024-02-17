@@ -10,16 +10,9 @@
 
 #------------------------------------------------------------------------------
 #load packages
-library(dplyr)
-library(ggplot2)
-library(readr)
 library(tidyverse)
 library(MCMCglmm)
-library(pedigreemm)
-library(QGglmm)
-library(purrr)
-library(knitr)
-library(kableExtra)
+
 
 #------------------------------------------------------------------------------
 
