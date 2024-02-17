@@ -52,6 +52,10 @@ Scripts include:
 
 08 - Animal models for estimating heritability of lifetime reproductive success
 
+Folders:
+
+"iscans" folder contains the raw R/G idat files for processing
+
 Input data includes:
 
 * batch#_samples.rds: Information about samples included in each batch (3x96)
