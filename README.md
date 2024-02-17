@@ -16,6 +16,7 @@ Climate change is increasingly disrupting evolved life history strategies and de
 In this paper we use epigenetic aging, a biomedical technique that tracks the deterioration of cellular function over lifetimes, to test the relationship between climate change and stress in polar bears (*Ursus maritimus*)
 
 All code was run in R v4.3.1 and runs on macOS Monterey v12.7.3
+
 Package versions: 
 
 * tidyverse v2.0.0
