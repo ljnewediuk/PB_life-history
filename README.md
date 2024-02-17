@@ -15,9 +15,9 @@ Climate change is increasingly disrupting evolved life history strategies and de
 
 In this paper we use epigenetic aging, a biomedical technique that tracks the deterioration of cellular function over lifetimes, to test the relationship between climate change and stress in polar bears (*Ursus maritimus*)
 
-Versions: 
+All code runs in R v4.3.1
+Package versions: 
 
-* R v4.3.1
 * tidyverse v2.0.0
 * sesame v1.18.4
 * minfi v1.46.0
@@ -30,7 +30,7 @@ Versions:
 * tidybayes v3.0.6
 * glmnet v4.1-8
 
-Two developmental versions of sesame and minfi packages are also required for script 1. These packages are available in the input files.
+Two developmental versions of sesame and minfi packages are also required for script 1, normalizing betas. These packages are available in the input files.
 
 
 Scripts include:
@@ -86,6 +86,10 @@ Input data includes:
     * LRS: lifetime reproductive success
     * Sex: F = female; M = male
 
+* simBreeding.csv: Life history info from simulated pedigree to run reproducible example in script 8. NOTE: SIMULATED DATA. REAL DATA ARE EMBARGOED FOR DATA SHARING RESTRICTIONS.
+
+* simBearPED.csv: Simulated pedigree to run reproducible example in script 8. NOTE: SIMULATED DATA. REAL DATA ARE EMBARGOED FOR DATA SHARING RESTRICTIONS.
+
 * full_sibs.rds: Character vector of bear IDs that are full siblings or offspring of other bears in the aging set
 
 * list_test_bears.rds: Character vector of bears included in clock testing set
@@ -102,9 +106,52 @@ Input data includes:
     * row: row of 96-well plate
     * column: column of 96-well plate
 
+Output data include:
+
+* PB_clock_ages.rds: Aged bears (n = 134) using polar bear epigenetic clock
+   * SampleID: unique sample ID including bear ID, date, and sample type
+   * BearID: unique bear ID
+   * Age: Age of bear at time of sampling
+   * Sex: F = female; M = male
+   * Spec: tissue type (blood or skin)
+   * AgePredict: predicted epigenetic age based on polar bear clock
+   * AgeAccel: Residual from lm(AgePredict ~ Age)
+   * yr: year of collection
+ 
+* clock_Cpgs.rds: CpG sites included in clock
+
+* f_effects_####: Fitted effects from corresponding model
+
 * updated_sample_sheet_PB_array#.rds: Original sample sheets with addition of locations for specific idat files in "iscans" folder
     * chip.ID.loc: unique chip id and location of sample in rows and columns on chip
     * Basename: location of corresponding idat file in iscans folder
 
 
 * nbetas_PB_array#.rds & tbetas_PB_array#.rds: Matrices of normalized betas and transposed normalized betas from raw idat files
+  
+* lh_info_epi.rds: Age acceleration data for bears with life history data
+   * BearID: unique bear ID
+   * Born: year of birth
+   * Age: Age of bear at time of sampling
+   * Sex: F = female; M = male
+   * AgePredict: predicted epigenetic age based on polar bear clock
+   * AgeAccel: Residual from lm(AgePredict ~ Age)
+   * FirstRepro: age of bear at first known reproduction
+   * LastRepro: age of bear at last known reproduction
+   * NOffspringYr: average number of offspring produced per year
+   * LostLitts: Estimated number of litters lost over lifetime
+   * LRS: lifetime reproductive success
+   
+* lh_info_pop.rds: Life history data for whole population, not including age acceleration data
+   * BearID: unique bear ID
+   * Born: year of birth
+   * Age: Age of bear at time of sampling
+   * Sex: F = female; M = male
+   * FirstRepro: age of bear at first known reproduction
+   * LastRepro: age of bear at last known reproduction
+   * NOffspringYr: average number of offspring produced per year
+   * LostLitts: Estimated number of litters lost over lifetime
+   * LRS: lifetime reproductive success
+
+* mcmc_LRS.rds: MCMCglmm animal model produced using true pedigree data in script 8
+
