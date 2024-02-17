@@ -1,7 +1,7 @@
 
-# 09 - Animal models ====
+# 08 - Animal models ====
 
-# Author: Leah Kathan
+# Author: Leah Kathan & Levi Newediuk
 
 #===============================================================================
 #POLAR BEAR EPIGENETICS
@@ -21,6 +21,12 @@ library(MCMCglmm)
 #===============================================================================
 #read in the pedigree file (id, dam, sire)
 #bearPED.csv corrected for dams and sires issues (don't use WH_ped.txt)
+#NOTE: bearPED.csv is an embargoed file due to restrictions on sharing the 
+#population pedigree. We have provided a simulated version of the pedigree 
+#(simBearPED.csv) with approximately the same number of individuals as the 
+#western Hudson Bay pedigree. Note this is SIMULATED DATA and NOT 
+#REPRESENTATIVE OF THE POPULATION, but does provide a reproducible example 
+#for running through this script.
 bearPED<- read.csv("input/bearPED.csv", header=T)
 colnames(bearPED)[1] <- "animal"
 bearPED$animal<-as.factor(bearPED$animal)
@@ -37,6 +43,11 @@ head(bearPED)
 #===============================================================================
 #------------------------------------------------------------------------------
 #load year of first breeding data (BearID, Born, FirstRepro, LastRepro, NOffspringYr, LRS, Sex)
+#NOTE: breeding.csv is an embargoed file due to restrictions on sharing the 
+#population pedigree. We have provided a simulated version of these data 
+#(simBreeding.csv) based on the simulated pedigree. Note this is SIMULATED 
+#DATA and NOT REPRESENTATIVE OF THE POPULATION, but does provide a reproducible 
+#example for running through this script.
 breeding <-read.csv("input/breeding.csv", header=T)
 
 # Add the dam information from bearPED to breeding
@@ -172,6 +183,7 @@ priorP3 <- list(R = list(V = 1, nu = 1),
 #------------------------------------------------------------------------------
 
 #------------------------------------------------------------------------------
+bearPED <- bearPED %>% dplyr::select(! Born)
 #estimates the inverse relatedness matrix
 Ainv <- inverseA(bearPED)$Ainv
 #ginv specifies that animal is the random effect linked to the pedigree/inverse 
@@ -182,13 +194,14 @@ Ainv <- inverseA(bearPED)$Ainv
 #------------------------------------------------------------------------------
 
 #------------------------------------------------------------------------------
+# NOTE: iterations reduced for reproducible example
 model_LRS <- MCMCglmm(LRS ~ Sex,
                       random = ~animal + dam + Born,
                       ginv = list(animal = Ainv), 
                       family="poisson", data = breeding_ped, 
                       nitt = 8000, thin = 10, 
                       burnin = 1000, prior = priorP3)
-saveRDS(model_LRS, file = "mcmc_LRS.rds")
+# saveRDS(model_LRS, file = "mcmc_LRS.rds")
 
 model_LRS <- readRDS(file="mcmc_LRS.rds")
 #------------------------------------------------------------------------------
