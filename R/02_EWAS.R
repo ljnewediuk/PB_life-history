@@ -38,6 +38,9 @@ sample_info <- readRDS('input/batch1_samples.rds') %>%
   rbind(readRDS('input/batch3_samples.rds')) %>%
   rename('Sample_Name' = sampleId)
 
+# Load relatedness data
+relatives <- readRDS('input/full_sibs.rds')
+
 # 2 Subset blood and skin for limma ====
 
 # Get subset with skin only
@@ -50,7 +53,7 @@ sample_sheet_blood <- sample_sheets %>%
 
 # 3 Make function to run limma model ====
 fit_limma <- function(betas = sample_sheets, samples = sample_info, 
-                      mod_formula = c('Spec', 'age', 'sex')) {
+                      mod_formula = c('Spec', 'age', 'sex'), relatives = NULL) {
   
   # Combine samples into design matrix
   design_mat <- betas %>%
@@ -77,8 +80,29 @@ fit_limma <- function(betas = sample_sheets, samples = sample_info,
   # Create model matrix (for sex and tissue EWAS)
   mod <- model.matrix(reformulate(mod_formula, response = NULL), data = design_mat)
   
-  # Run Limma for DNAm analysis.
-  cb_fit <-  lmFit(beta_dat, mod)
+  # If interested in blocking by relatedness (included a relatedness vector),
+  # get correlation within blocks of relatives/non-relatives then run Limma
+  if(! is.null(relatives)) {
+    
+    # Make vector of relatives vs. non-relatives
+    relvec <- design_mat %>%
+      mutate(relatives = ifelse(id %in% relatives, 1, 0)) %>%
+      pull(relatives)
+    
+    # Get consensus correlation
+    corr <-  duplicateCorrelation(beta_dat, mod, block = relvec)
+    
+    # Run Limma blocking for relatives
+    cb_fit <-  lmFit(beta_dat, mod, block = relvec, correlation = corr$cor)
+    
+  } else {
+    
+    # Otherwise, run basic Limma for DNAm analysis.
+    cb_fit <-  lmFit(beta_dat, mod)
+    
+  }
+  
+  # Get components of model fit
   cb_ebayes <- eBayes(cb_fit)
   
   # pull out pval, coefficients from limma and combine with annotation
@@ -98,69 +122,101 @@ fit_limma <- function(betas = sample_sheets, samples = sample_info,
 
 # 4 Run limma for basic EWAS on tissue and sex ====
 
-tissue_sex_limma <- fit_limma()
+# In parallel, run limma with and without blocking by relatives to assess 
+# differences in which Cgs are significant
 
-# Add adjusted pvalues for variable of interest
-pvals_tissue_sex <- tissue_sex_limma %>%
-  mutate(SpecSkin_pval_adj = p.adjust(SpecSkin_pval, method = 'BH'),
-         sexM_pval_adj = p.adjust(sexM_pval, method = 'BH')) %>%
-  mutate(sig_tissue = ifelse(SpecSkin_pval_adj < 0.05, 'yes', 'no'),
-         sig_sex = ifelse(sexM_pval_adj < 0.05, 'yes', 'no'))
+# Make list with NULL as [[1]] and list of relatives as [[2]]
+relatives_list <- list('no_relatives' = NULL, 'relatives' = relatives)
 
-# Get pvlaues either > 0.05 or < 0.05 (depending on whether we want the Cgs
-# correlated or uncorrelated with the variable)
+# Loop through Limma models with relatives either NULL (no blocking variable)
+# or blocking by related samples
+for(i in 1:length(relatives_list)) {
+  
+  tissue_sex_limma <- fit_limma(relatives = relatives_list[[i]])
+  
+  # Add adjusted pvalues for variable of interest
+  
+  pvals_tissue_sex <- tissue_sex_limma %>%
+    mutate(SpecSkin_pval_adj = p.adjust(SpecSkin_pval, method = 'BH'),
+           sexM_pval_adj = p.adjust(sexM_pval, method = 'BH')) %>%
+    mutate(sig_tissue = ifelse(SpecSkin_pval_adj < 0.05, 'yes', 'no'),
+           sig_sex = ifelse(sexM_pval_adj < 0.05, 'yes', 'no'))
+  
+  # Get pvlaues either > 0.05 or < 0.05 (depending on whether we want the Cgs
+  # correlated or uncorrelated with the variable)
+  
+  # Tissue
+  cgs_cor_w_tissue <- pvals_tissue_sex %>%
+    filter(SpecSkin_pval_adj < 0.05) %>%
+    pull(CGid)
+  
+  # Sex
+  cgs_cor_w_sex <- pvals_tissue_sex %>%
+    filter(sexM_pval_adj < 0.05) %>%
+    pull(CGid)
+  
+  # 5 Run limma for EWAS on age separately for blood and skin ====
+  
+  # Blood/age
+  blood_age_limma <- fit_limma(betas = sample_sheet_blood, 
+                               mod_formula = c('age', 'sex'),
+                               relatives = relatives_list[[i]]) %>%
+    mutate(age_pval_adj = p.adjust(age_pval, method = 'BH')) %>%
+    mutate(sig = ifelse(age_pval < 10e-6, 'yes', 'no'))
+  
+  # Skin/age
+  skin_age_limma <- fit_limma(betas = sample_sheet_skin, 
+                              mod_formula = c('age', 'sex'),
+                              relatives = relatives_list[[i]]) %>%
+    mutate(age_pval_adj = p.adjust(age_pval, method = 'BH')) %>%
+    mutate(sig = ifelse(age_pval < 10e-6, 'yes', 'no'))
+  
+  # Make table of p values correlated with age
+  print(
+    data.frame(
+      tissue = c(rep('skin', times = 3), rep('blood', times = 3)),
+      pval = rep(c('10e-6', '10e-7', '10e-8'), times = 2),
+      n = c(nrow(skin_age_limma[skin_age_limma$age_pval < 10e-6,]),
+            nrow(skin_age_limma[skin_age_limma$age_pval < 10e-7,]),
+            nrow(skin_age_limma[skin_age_limma$age_pval < 10e-8,]),
+            nrow(blood_age_limma[blood_age_limma$age_pval < 10e-6,]),
+            nrow(blood_age_limma[blood_age_limma$age_pval < 10e-7,]),
+            nrow(blood_age_limma[blood_age_limma$age_pval < 10e-8,])))
+  )
+  
+  # Use all Cgs highly correlated with age (p < 10e-6) and exclude Cgs correlated 
+  # (p < 0.05) with sex
+  Cgs_sample <- skin_age_limma %>%
+    # Cgs correlated with age
+    rbind(blood_age_limma) %>%
+    filter(age_pval_adj < 10e-6) %>%
+    # Remove Cgs correlated with sex and tissue
+    filter(! CGid %in% c(cgs_cor_w_sex)) %>%
+    pull(CGid)  %>% 
+    unique()
+  
+  # Assign Cgs as either with blocking for relatives or without
+  assign(paste0('Cgs_sample_', names(relatives_list)[i]), Cgs_sample)
+  
+}
 
-# Tissue
-cgs_cor_w_tissue <- pvals_tissue_sex %>%
-  filter(SpecSkin_pval_adj < 0.05) %>%
-  pull(CGid)
+# 6 Difference between Cgs selected with vs. without blocking by relatives ====
 
-# Sex
-cgs_cor_w_sex <- pvals_tissue_sex %>%
-  filter(sexM_pval_adj < 0.05) %>%
-  pull(CGid)
+setdiff(Cgs_sample_no_relatives, Cgs_sample_relatives)
 
-# 5 Run limma for EWAS on age separately for blood and skin ====
+# Result:
+# 8 Cpgs different: "cg20167048" "cg05631094" "cg06074849" "cg08383062" 
+# "cg15148667" "cg16787065" "cg22661206" "cg08965235"
+# 
+# This is a ~0.2% difference from the feature set we used in the original clock,
+# and ~0.02% of all Cpgs in the array.
 
-# Blood/age
-blood_age_limma <- fit_limma(betas = sample_sheet_blood, mod_formula = c('age', 'sex')) %>%
-  mutate(age_pval_adj = p.adjust(age_pval, method = 'BH')) %>%
-  mutate(sig = ifelse(age_pval < 10e-6, 'yes', 'no'))
-
-# Skin/age
-skin_age_limma <- fit_limma(betas = sample_sheet_skin, mod_formula = c('age', 'sex')) %>%
-  mutate(age_pval_adj = p.adjust(age_pval, method = 'BH')) %>%
-  mutate(sig = ifelse(age_pval < 10e-6, 'yes', 'no'))
-
-# Make table of p values correlated with age
-data.frame(tissue = c(rep('skin', times = 3), rep('blood', times = 3)),
-           pval = rep(c('10e-6', '10e-7', '10e-8'), times = 2),
-           n = c(nrow(skin_age_limma[skin_age_limma$age_pval < 10e-6,]),
-                 nrow(skin_age_limma[skin_age_limma$age_pval < 10e-7,]),
-                 nrow(skin_age_limma[skin_age_limma$age_pval < 10e-8,]),
-                 nrow(blood_age_limma[blood_age_limma$age_pval < 10e-6,]),
-                 nrow(blood_age_limma[blood_age_limma$age_pval < 10e-7,]),
-                 nrow(blood_age_limma[blood_age_limma$age_pval < 10e-8,])))
-
-# Use all Cgs highly correlated with age (p < 10e-6) and exclude Cgs correlated 
-# (p < 0.05) with sex
-Cgs_sample <- skin_age_limma %>%
-  # Cgs correlated with age
-  rbind(blood_age_limma) %>%
-  filter(age_pval_adj < 10e-6) %>%
-  # Remove Cgs correlated with sex and tissue
-  filter(! CGid %in% c(cgs_cor_w_sex)) %>%
-  pull(CGid)  %>% 
-  unique()
-
-# 6 Save ====
+# 7 Save ====
 
 # Cgs for clock
-saveRDS(Cgs_sample, 'output/clock_Cpgs.rds')
+saveRDS(Cgs_sample_no_relatives, 'output/clock_Cpgs.rds')
 
 # Limmas for plotting
 saveRDS(blood_age_limma, 'output/limma_blood_age.rds')
 saveRDS(skin_age_limma, 'output/limma_skin_age.rds')
 saveRDS(pvals_tissue_sex, 'output/limma_tissue_sex.rds')
-
-
