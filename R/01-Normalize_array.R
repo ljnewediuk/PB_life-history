@@ -23,7 +23,7 @@ library(minfi)
 # A. Shafer.
 
 # Specify batch number
-batch_no <- 1
+batch_no <- 3
 
 # 1 Install packages if not already installed ====
 
@@ -97,8 +97,11 @@ n_betas <- as_tibble(minfi::getBeta(Mset), rownames = "CGid")
 
 # 5 Check quality of methylation data ====
 
+# Get raw betas 
+Rawset <- minfi::preprocessRaw(RGset)
+
 # Get QC for methylset
-QCset <- getQC(Mset)
+QCset <- getQC(Rawset)
 
 # Get median unmethylated and methylated intensity (log2)
 QCdf <- data.frame(mMed = QCset$mMed, uMed = QCset$uMed)
@@ -109,9 +112,26 @@ ggplot(QCdf, aes(x = mMed, y = uMed)) +
   geom_segment(x = 8, xend = 13, y = 13, yend = 8, linetype = 'dashed') + 
   xlim(8,14) + ylim(8,14)
 
-# Do this for all pops, then plot good/bad samples for each
+# The mean detection p-value for each sample reflects the general quality of 
+# the samples in terms of signal. The detection p-value compares the total signal 
+# (M+U) for each probe to the background signal level estimated from the negative 
+# control probes. Larger detection p-values should indicate a poorer quality sample. 
+# Samples with more failed probes should have larger detection p-values. According 
+# to Arneson et al. 2022, the control probes are not expected to "work" for
+# non-human species, but it should nonetheless give us an idea of relative quality.
 
-# 5 Transpose normalized betas for clock-fitting ====
+# Get detection p-values
+QCp <- detectionP(RGset)
+
+# Get mean detection p-values
+meanQCp <- apply(QCp, 2, mean) %>%
+  as.data.frame() %>%
+  rownames_to_column()
+
+# Make data.frame for saving and plotting
+colnames(meanQCp) <- c('chip.ID.loc', 'detection_p')
+
+# 6 Transpose normalized betas for clock-fitting ====
 
 # Transpose matrix after removing CGid column
 n_betas_t <- n_betas %>%
@@ -122,7 +142,7 @@ n_betas_t <- n_betas %>%
 # Add back CGid by renaming rest of columns to CG sites
 colnames(n_betas_t) <- n_betas$CGid
 
-# 6 Save for clock ====
+# 7 Save for clock ====
 
 # Save betas
 saveRDS(n_betas_t, paste0('output/tbetas_PB_array', batch_no, '.rds'))
@@ -130,3 +150,6 @@ saveRDS(n_betas_t, paste0('output/tbetas_PB_array', batch_no, '.rds'))
 saveRDS(n_betas, paste0('output/nbetas_PB_array', batch_no, '.rds'))
 # Save sample sheet
 saveRDS(sample_sheet, paste0('output/updated_sample_sheet_PB_array', batch_no, '.rds'))
+# Save detection p-values
+saveRDS(meanQCp, paste0('output/detection_p_batch', batch_no, '.rds'))
+

@@ -48,6 +48,9 @@ epi_dat <- readRDS('output/PB_clock_ages.rds') %>%
 # 2 Plot age acceleration on year of birth ====
 
 # Get mean of posterior for age accel of F & M in accel ~ born models
+accel_born_mean <- f_effects_accel_born %>%
+group_by(Born) %>%
+  summarize(AgeAccel = mean(AgeAccel))
 accel_born_mean_F <- f_effects_accel_born_F %>%
   group_by(Born) %>%
   summarize(AgeAccel = mean(AgeAccel))
@@ -81,6 +84,32 @@ ggplot(data = f_effects_accel_born_M, aes(x = Born, y = AgeAccel)) +
 
 # Save plot
 ggsave('accel_born_plot.tiff', plot = last_plot(), path = 'figures/main/', 
+       device = 'tiff', dpi = 300, height = 12, width = 14, units = 'cm', bg = 'white')
+ 
+#################
+# Plot age acceleration ~ birth year models coloured by sample
+ggplot(data = f_effects_accel_born, aes(x = Born, y = AgeAccel)) +
+  stat_lineribbon(.width = seq(from = .03, to = .975, by = .03),
+                  alpha = .1, size = 0, fill = 'grey') +
+  geom_line(data = accel_born_mean, colour = 'black') +
+  geom_point(data = epi_dat, aes(x = Born, y = AgeAccel, colour = Spec), size = 3) +
+  scale_color_manual(values = c('#d62d20', '#536878'), name = 'Tissue type') +
+  theme(panel.background = element_rect(colour = 'black', fill = 'white', linewidth = 1.25),
+        axis.text = element_text(size = 18, colour = 'black'),
+        axis.title.y = element_text(size = 18, colour = 'black', vjust = 3),
+        axis.title.x = element_text(size = 18, colour = 'black', vjust = -3),
+        legend.position = c(0.8, 0.15),
+        legend.key = element_rect(fill = NA, colour = NA),
+        legend.text = element_text(size = 18, colour = 'black'),
+        legend.title = element_text(size = 18, colour = 'black'),
+        legend.background = element_rect(fill = NA, colour = NA),
+        legend.box.background = element_rect(fill = NA, colour = NA),
+        plot.margin = unit(c(0.25, 0.25, 0.75, 0.75), 'cm'),
+        panel.grid = element_line(linewidth = 0.5, colour = '#e5e5e5')) +
+  xlab('Year of birth') + ylab('Age acceleration (years)')
+
+# Save plot
+ggsave('accel_born_tissue_plot.tiff', plot = last_plot(), path = 'figures/supplementary/', 
        device = 'tiff', dpi = 300, height = 12, width = 14, units = 'cm', bg = 'white')
 
 # 3 Plot lifetime reproductive success on year of first reproduction ====
@@ -162,7 +191,7 @@ ggplot(f_effects_accel_fr_M, aes(x = FirstRepro, y = AgeAccel)) +
   ylab('Age acceleration (years)') + xlab('Age at first reproduction')
 
 # Save plot
-ggsave('accel_fr_plot.tiff', plot = last_plot(), path = 'figures/main/', 
+ggsave('accel_fr_plot.tiff', plot = last_plot(), path = 'figures/extended/', 
        device = 'tiff', dpi = 300, height = 12, width = 14, units = 'cm', bg = 'white')
 
 # 5 Plot posterior predictive checks ====
@@ -201,5 +230,5 @@ plot_grid(plotlist = all_plots, nrow = 1)
 
 # Save plots
 ggsave('pp_checks.tiff', plot = last_plot(), 
-       device = 'tiff', path = 'figures/', dpi = 300, height = 12, width = 25, units = 'cm', bg = 'white')
+       device = 'tiff', path = 'figures/extended', dpi = 300, height = 12, width = 25, units = 'cm', bg = 'white')
 
