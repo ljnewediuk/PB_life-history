@@ -229,8 +229,10 @@ for(i in 2:3) {
   
   accel_plot <- ggplot() +
     geom_point(data = plot_dat, aes(x = Born, y = AgeAccel, colour = Spec), size = 2) +
-    # geom_smooth(data = plot_dat, aes(x = Born, y = AgeAccel, group = Spec, colour = Spec), 
-    #             method = 'lm', se = F, size = 1.5) +
+    geom_smooth(data = plot_dat, aes(x = Born, y = AgeAccel, group = Spec, colour = Spec),
+                method = 'lm', se = F, size = 1.5) +
+    geom_smooth(data = plot_dat, aes(x = Born, y = AgeAccel),
+                colour = 'black', method = 'lm', se = F, size = 1.5) +
     scale_colour_manual(values = c('#d62d20', '#536878')) +
     ylab('Epigenetic age acceleration') + xlab('Year of birth') +
     theme(plot.margin = unit(c(0.5, 0.5, 1, 2), 'cm'),
