@@ -1,11 +1,17 @@
 
+# X1 - Supplemental human test ====
+
+# Author: Levi Newediuk
+
 # Test polar bear clock on human samples
 # 107 human blood samples from "Methylation studies in human blood N94 N68", 
 # accession # GSE184221
 
 # Samples were run on Horvath Mammal 40 array, so should be able to age them
-# using the polar bear clock
+# using the polar bear clock. This test is not included in the extended data and
+# is for exploratory purposes only.
 
+# Load packages
 library(tidyverse)
 library(sesame)
 library(minfi)

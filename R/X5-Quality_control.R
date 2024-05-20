@@ -1,4 +1,8 @@
 
+# X5 - Supplemental quality control ====
+
+# Author: Levi Newediuk
+
 # Check for relationship between detection p-values and age of sample
 
 library(tidyverse)

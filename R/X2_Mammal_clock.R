@@ -1,14 +1,23 @@
 
-library(tidyverse)
-library(glmnet)
-library(cowplot)
+# X2 - Supplemental universal clock ====
 
-# 02 - Run universal clock on polar bear samples
+# Author: Levi Newediuk
 
-# Original code comes from S1-S3 tables of Lu et al. 2023 
+# Test universal clock on polar bear samples to confirm the predictions are
+# similar to our clock (should be more variation in the UC clock because it
+# includes multiple species, tissues, etc.)
+
+# Original code comes from S1-S3 tables of Lu et al. 2021 preprint on bioRxiV
+# (https://doi.org/10.1101/2021.01.18.426733)
+
 # The commenting wasn't great, so not 100% clear on each function, but details 
 # are in the pre-print. I made some changes for clarity, conciseness, or to fix 
 # things that weren't working property.
+
+# Load packages
+library(tidyverse)
+library(glmnet)
+library(cowplot)
 
 # Specify bad samples
 bad_samps <- c('X09304_2001-09-06_Blood', 'X09407_1988-09-07_Blood',

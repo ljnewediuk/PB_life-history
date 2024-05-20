@@ -1,10 +1,9 @@
 
-# Supplement - Early bears clock ====
+# X3 - Supplemental early bears clock ====
 
 # Author: Levi Newediuk
 
-#===============================================================================
-#POLAR BEAR EPIGENETICS
+
 # NOTE: This is only a validation of our original clock. The clock produced here
 # has issues that make it unreliable.
 
@@ -15,17 +14,12 @@
 # evenly across years, which means we have an even spread of ages in our data,
 # but this is not the case when we use all the early bears to predict later bears.
 # All of the early bears are mature (older than 5 yrs with most in their 20s), 
-# and most later bears are  younger (under 5). The clock under-predicts the ages 
-# of younger bears, creating a spurious and relatively strong positive
-# association between age and age acceleration not present in our clock. Because
-# of this spurious association, most of the later-born bears (which are also 
-# primarily younger) show a spurious pattern of deceleration, so that the positive
-# association we found between birth year and age acceleration using our much more
-# accurate clock appears negative using the early-years clock.
-#===============================================================================
+# and most later bears are  younger (under 5). The clock poorly predicts age for
+# the younger bears not used to build the clock.
 
+# At the end of the script I also included some density plots showing the age 
+# distribution in the training and testing data to demonstrate the issue.
 
-#------------------------------------------------------------------------------
 # load packages
 library(tidyverse)
 library(glmnet)

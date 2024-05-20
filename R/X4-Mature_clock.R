@@ -1,16 +1,13 @@
 
-# Supplement - Mature bears clock ====
+# X4 - Supplemental Mature bears clock ====
 
 # Author: Levi Newediuk
 
-#===============================================================================
-#POLAR BEAR EPIGENETICS
-#Fit clock with only sexually mature bears in case we are capturing different
-#processes when we include young bears undergoing development
-#===============================================================================
+# Fit clock with only sexually mature bears in case we are capturing different
+# processes when we include young bears undergoing development. It seems the 
+# predictions are slightly poorer, suggesting the aging process we're capturing 
+# is likely similar across ages.
 
-
-#------------------------------------------------------------------------------
 # load packages
 library(tidyverse)
 library(glmnet)
