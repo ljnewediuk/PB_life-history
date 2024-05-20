@@ -123,6 +123,12 @@ Input data includes:
     
 * human_sample_info.txt: Sample information from human idats (accession GSE184221) used to test the ability of the polar bear clock to predict age in other species
 
+* HorvathMammal40.CanonicalManifest.3.2019.sesame.csv: Manifest file
+
+* HorvathMammal40.Manifest.May2020.manifest.csv: Manifest file
+
+* mamm_chip_probes_265275085cfa.bam: Mammal chip probes alignment
+
 Output data include:
 
 * PB_clock_ages.rds: Aged bears (n = 134) using polar bear epigenetic clock
@@ -136,6 +142,8 @@ Output data include:
    * yr: year of collection
  
 * clock_Cpgs.rds: CpG sites included in clock
+
+* detection_p_batch#.rds: Sample detection p-values for quality control
 
 * f_effects_####: Fitted effects from corresponding model
 
