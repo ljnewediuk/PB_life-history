@@ -13,6 +13,7 @@
 # Big & unnecessary files and folders
 figures/
 models/
+iscans/human_test/
 
 # Hidden/embargoed files and folders
 extras/
