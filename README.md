@@ -52,6 +52,16 @@ Scripts include:
 
 08 - Animal models for estimating heritability of lifetime reproductive success
 
+X1 - (Supplement) Test of the polar bear clock to predict age in human samples
+
+X2 - (Supplement) Test of polar bear samples aged using universal mammal clock
+
+X3 - (Supplement) Test clock using early, less stressed bears to predict age in bears experiencing stress from climate change
+
+X4 - (Supplement) Test clock using mature bears to predict age in mature bears
+
+X5 - Quality control (detection p-values)
+
 Folders:
 
 "iscans" folder contains the raw R/G idat files for processing
@@ -110,6 +120,8 @@ Input data includes:
     * Stripe: location of sample in rows and columns of chip, each with two columns (C) and 6 rows (R)
     * row: row of 96-well plate
     * column: column of 96-well plate
+    
+* human_sample_info.txt: Sample information from human idats (accession GSE184221) used to test the ability of the polar bear clock to predict age in other species
 
 Output data include:
 
