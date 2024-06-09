@@ -35,6 +35,10 @@ ggplot() +
         axis.title.y = element_text(colour = 'black', size = 18, vjust = 5),
         axis.text = element_text(colour = 'black', size = 18))
 
+# Save plots
+ggsave('detection_p_vals.tiff', plot = last_plot(), 
+       device = 'tiff', path = 'figures/extended', dpi = 300, height = 12, width = 18, units = 'cm', bg = 'white')
+
 # Also do so for non-outliers
 ggplot() +
   geom_point(data = QC_dat, aes(x = YrSampled, y = detection_p), colour = 'black', size = 2) +
