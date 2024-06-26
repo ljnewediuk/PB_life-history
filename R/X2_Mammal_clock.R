@@ -253,3 +253,27 @@ ggsave('uc2_plot.tiff', plot = uc_clocks$`UC clock 2`, path = 'figures/supplemen
        device = 'tiff', dpi = 300, height = 12, width = 27, units = 'cm', bg = 'white')
 ggsave('uc3_plot.tiff', plot = uc_clocks$`UC clock 3`, path = 'figures/supplementary/', 
        device = 'tiff', dpi = 300, height = 12, width = 27, units = 'cm', bg = 'white')
+
+# 7 Model age acceleration ~ birth year for both clocks ====
+
+# Get data ready
+uc_ages <- output %>%
+  mutate(BearID = substr(Sample_Name, 1,6),
+         across(c(Born, AccelClock2, AccelClock3), 
+                list(sc = function(x) as.vector(scale(x, center = T)))))
+
+# Clock 2
+accel_born_uc2_mod <-  brm(AccelClock2_sc ~ Born_sc + Sex + (Born_sc + Sex | BearID),
+                           data = uc_ages, family = gaussian, 
+                           iter = 10000, warmup = 5000, chains = 4, cores = 4, 
+                           prior = prior(normal(0,1), class = b),
+                           control = list(adapt_delta = 0.99, max_treedepth = 20),
+                           backend = 'cmdstanr')
+
+# Clock 3
+accel_born_uc3_mod <-  brm(AccelClock3_sc ~ Born_sc + Sex + (Born_sc + Sex | BearID),
+                           data = uc_ages, family = gaussian, 
+                           iter = 10000, warmup = 5000, chains = 4, cores = 4, 
+                           prior = prior(normal(0,1), class = b),
+                           control = list(adapt_delta = 0.99, max_treedepth = 20),
+                           backend = 'cmdstanr')
