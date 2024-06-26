@@ -179,10 +179,8 @@ age_corr <- as.numeric(cor.test(age_preds$AgePredict, age_preds$Age)$estimate)
 mae_label <- paste0('mae = ', round(age_mae, 1))
 corr_label <- paste0('correlation = ', round(age_corr, 2))
 
-ggplot() +
+clock_plot <- ggplot() +
   geom_abline(intercept = 0, slope = 1, linetype = 'dashed') +
-  # geom_smooth(data = age_preds, aes(x = Age, y = AgePredict), 
-  #             colour = 'black', linewidth = 1.5, method = 'lm', se = F) +
   geom_point(data = age_preds, aes(x = Age, y = AgePredict, colour = Spec), size = 2) +
   annotate(geom = 'text', x = 25, y = 0, vjust = -2, label = mae_label, size = 6) +
   annotate(geom = 'text', x = 25, y = 0, vjust = 0, label = corr_label, size = 6) +
@@ -201,20 +199,21 @@ ggplot() +
 
 # 8 - Plot age acceleration ~ birth year ====
 
-age_preds %>%
+accel_plot <- age_preds %>%
   mutate(Born = yr - floor(Age)) %>%
   ggplot() +
-  geom_smooth(aes(x = Born, y = AgeAccel), 
-              method = 'lm', colour = 'black') +
   scale_colour_manual(values = c('#d62d20', '#536878')) +
-  geom_point(aes(x = Born, y = AgeAccel, colour = Spec)) +
+  geom_point(aes(x = Born, y = AgeAccel, colour = Spec), size = 2) +
   theme(plot.margin = unit(c(0.5, 0.5, 1, 1), 'cm'),
         panel.background = element_rect(fill = 'white', colour = 'black'),
         panel.grid = element_blank(),
         axis.title.x = element_text(colour = 'black', size = 18, vjust = -5),
         axis.title.y = element_text(colour = 'black', size = 18, vjust = 5),
         axis.text = element_text(colour = 'black', size = 18),
-        legend.position = 'none')
+        legend.position = 'none') +
+  ylab('Epigenetic age acceleration') + xlab('Year of birth')
+
+plot_grid(clock_plot, accel_plot, ncol = 2, labels = c('A', 'B'), label_size = 20)
 
 # 9 - Fit model ====
 
@@ -236,6 +235,6 @@ accel_mod  <- brm(AgeAccel_sc ~ Born_sc + Sex + (Born_sc + Sex | BearID),
 # 10 - Save plot ====
 
 ggsave('mature_clock.tiff', plot = last_plot(), 
-       device = 'tiff', path = 'figures/supplementary', dpi = 300, height = 15, width = 15, units = 'cm', bg = 'white')
+       device = 'tiff', path = 'figures/supplementary', dpi = 300, height = 12, width = 27, units = 'cm', bg = 'white')
 
 
