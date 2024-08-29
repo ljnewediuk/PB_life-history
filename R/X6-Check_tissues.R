@@ -95,62 +95,7 @@ bayestestR::p_direction(skin_mod)
 #   Born_sc     | 90.83%
 #  SexM        | 89.36%
 
-# 4 Sample 20 skin, 20 blood, and model ====
-
-# Checking whether we might find a similarly weak relationship between birth
-# year and age acceleration with a small sub-sample
-
-# Set random seed
-set.seed(12)
-
-# Sample 1 observation per bear
-sub_skin <- ages_skin %>%
-  group_by(BearID) %>%
-  slice_sample(n = 1)
-
-# Re-set random seed for next sample
-set.seed(12)
-
-# Sample 20 bears per tissue
-sample_skin <- sub_skin %>%
-  ungroup() %>%
-  slice_sample(n = 39, replace = F)
-
-# Fit model
-sub_skin_mod <- brm(AgeAccel_sc ~ Born_sc + Sex,
-               family = gaussian, data = sample_skin,
-               iter = 10000, warmup = 5000, chains = 4, cores = 4, 
-               prior = prior(normal(0,1), class = b),
-               control = list(adapt_delta = 0.99, max_treedepth = 20),
-               backend = 'cmdstanr',
-               silent = 2)
-
-# Probability of directional effect
-bayestestR::p_direction(sub_skin_mod)
-
-# Sub-sample...
-# Probability of Direction 
-# Parameter   |     pd
-# --------------------
-#   (Intercept) | 79.75%
-#   Born_sc     | 61.92%
-#   SexM        | 83.49%
-
-# Plot the blood and skin
-
-sample_skin %>%
-  ggplot(aes(x = Born, y = AgeAccel)) +
-  geom_point(colour = '#536878') +
-  ylab('Epigenetic age acceleration') + xlab('Year of birth') +
-  theme(plot.margin = unit(c(0.5, 0.5, 1, 1), 'cm'),
-        panel.background = element_rect(fill = 'white', colour = 'black'),
-        panel.grid = element_blank(),
-        axis.title.x = element_text(colour = 'black', size = 18, vjust = -5),
-        axis.title.y = element_text(colour = 'black', size = 18, vjust = 5),
-        axis.text = element_text(colour = 'black', size = 18),
-        legend.position = 'none')
-
-# 5 Check agreement between blood and skin samples ====
+# 4 Check agreement between blood and skin samples ====
 
 # Which individuals have a combination of blood and skin in the same year?
 bears_by_year <- ages %>% 
@@ -183,7 +128,7 @@ ages  %>%
 ggsave('blood_skin_agreement.tiff', plot = last_plot(), path = 'figures/supplementary/', 
        device = 'tiff', dpi = 300, height = 12, width = 14, units = 'cm', bg = 'white')
 
-# 6 Fit and plot age ~ birth year model with effect for tissue ====
+# 5 Fit and plot age ~ birth year model with effect for tissue ====
 
 # Fit model
 tissue_mod <- brm(AgeAccel_sc ~ Born_sc + Spec + (Born_sc + Spec | BearID),
