@@ -60,7 +60,9 @@ X3 - (Supplement) Test clock using early, less stressed bears to predict age in 
 
 X4 - (Supplement) Test clock using mature bears to predict age in mature bears
 
-X5 - Quality control (detection p-values)
+X5 - (Supplement) Quality control (detection p-values)
+
+X6 - (Supplement) Check for any difference in aging rates over time by tissue
 
 Folders:
 
