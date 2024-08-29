@@ -197,25 +197,7 @@ clock_plot <- ggplot() +
         legend.title = element_blank(),
         legend.text = element_text(size = 18, colour = 'black'))
 
-# 8 - Plot age acceleration ~ birth year ====
-
-accel_plot <- age_preds %>%
-  mutate(Born = yr - floor(Age)) %>%
-  ggplot() +
-  scale_colour_manual(values = c('#d62d20', '#536878')) +
-  geom_point(aes(x = Born, y = AgeAccel, colour = Spec), size = 2) +
-  theme(plot.margin = unit(c(0.5, 0.5, 1, 1), 'cm'),
-        panel.background = element_rect(fill = 'white', colour = 'black'),
-        panel.grid = element_blank(),
-        axis.title.x = element_text(colour = 'black', size = 18, vjust = -5),
-        axis.title.y = element_text(colour = 'black', size = 18, vjust = 5),
-        axis.text = element_text(colour = 'black', size = 18),
-        legend.position = 'none') +
-  ylab('Epigenetic age acceleration') + xlab('Year of birth')
-
-plot_grid(clock_plot, accel_plot, ncol = 2, labels = c('A', 'B'), label_size = 20)
-
-# 9 - Fit model ====
+# 8 - Fit model ====
 
 library(brms)
 
@@ -231,6 +213,49 @@ accel_mod  <- brm(AgeAccel_sc ~ Born_sc + Sex + (Born_sc + Sex | BearID),
     prior = prior(normal(0,1), class = b),
     control = list(adapt_delta = 0.99, max_treedepth = 20),
     backend = 'cmdstanr')
+
+# New data for plotting CIs
+nd <- expand_grid(BearID = NA, Sex = NA,
+                  Born_sc = seq(from = min(model_dat$Born_sc), 
+                                to = max(model_dat$Born_sc),
+                                by = 0.05))
+# Extract fitted values
+f <- fitted(accel_mod, newdata = nd, probs = c(0.025, 0.975), summary = F) %>%
+  data.frame() %>%
+  # Pivot
+  pivot_longer(everything()) %>%
+  bind_cols(expand_grid(draws = 1:20000, nd)) %>%
+  # Rename and unscale
+  mutate(Born = Born_sc * sd(model_dat$Born) + mean(model_dat$Born),
+         AgeAccel = value * sd(model_dat$AgeAccel) + mean(model_dat$AgeAccel)) %>%
+  select(Born, AgeAccel)
+# Mean of posterior for line
+f_mean <- f %>%
+  group_by(Born) %>%
+  summarize(AgeAccel = mean(AgeAccel))
+
+# 8 - Plot age acceleration ~ birth year model and facet ====
+
+accel_plot <- age_preds %>%
+  mutate(Born = yr - floor(Age)) %>%
+  ggplot() +
+  stat_lineribbon(data = f, aes(x = Born, y = AgeAccel),
+                  .width = seq(from = .03, to = .975, by = .03),
+                  alpha = .1, size = 0, fill = '#C0C0C0') +
+  geom_line(data = f_mean, aes(x = Born, y = AgeAccel), colour = '#808080') +
+  scale_colour_manual(values = c('#d62d20', '#536878')) +
+  geom_point(aes(x = Born, y = AgeAccel, colour = Spec), size = 2) +
+  theme(plot.margin = unit(c(0.5, 0.5, 1, 1), 'cm'),
+        panel.background = element_rect(fill = 'white', colour = 'black'),
+        panel.grid = element_blank(),
+        axis.title.x = element_text(colour = 'black', size = 18, vjust = -5),
+        axis.title.y = element_text(colour = 'black', size = 18, vjust = 5),
+        axis.text = element_text(colour = 'black', size = 18),
+        legend.position = 'none') +
+  ylab('Epigenetic age acceleration') + xlab('Year of birth')
+
+# Plot clock and age accel ~ birth year as panels
+plot_grid(clock_plot, accel_plot, ncol = 2, labels = c('A', 'B'), label_size = 20)
 
 # 10 - Save plot ====
 
