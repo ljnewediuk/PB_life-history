@@ -127,9 +127,9 @@ Input data includes:
 
 * HorvathMammal40.CanonicalManifest.3.2019.sesame.csv: Manifest file
 
-* HorvathMammal40.Manifest.May2020.manifest.csv: Manifest file
+* HorvathMammal40.Manifest.May2020.manifest.csv: Manifest file (Large file in gitignore; available from clock foundation github)
 
-* mamm_chip_probes_265275085cfa.bam: Mammal chip probes alignment
+* mamm_chip_probes_265275085cfa.bam: Mammal chip probes alignment (Large file in gitignore)
 
 Output data include:
 
