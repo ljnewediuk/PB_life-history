@@ -18,7 +18,7 @@ iscans/human_test/
 # Hidden/embargoed files and folders
 extras/
 input/bearPED.csv
-input/pedigree_27Mar2024.csv
+input/pedigree_27Mar2024.txt
 input/breeding.csv
 input/bear_capture_info.csv
 
