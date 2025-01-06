@@ -147,14 +147,14 @@ Output data include:
 
 * detection_p_batch#.rds: Sample detection p-values for quality control
 
-* f_effects_####: Fitted effects from corresponding model
+* f_effects_####: Fitted effects from corresponding model (large files in gitignore)
 
 * updated_sample_sheet_PB_array#.rds: Original sample sheets with addition of locations for specific idat files in "iscans" folder
     * chip.ID.loc: unique chip id and location of sample in rows and columns on chip
     * Basename: location of corresponding idat file in iscans folder
 
 
-* nbetas_PB_array#.rds & tbetas_PB_array#.rds: Matrices of normalized betas and transposed normalized betas from raw idat files
+* nbetas_PB_array#.rds & tbetas_PB_array#.rds: Matrices of normalized betas and transposed normalized betas from raw idat files  (large files in gitignore)
   
 * lh_info_epi.rds: Age acceleration data for bears with life history data
    * BearID: unique bear ID
