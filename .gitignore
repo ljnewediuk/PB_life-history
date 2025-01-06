@@ -11,9 +11,14 @@
 .DS_Store
 
 # Big & unnecessary files and folders
+input/HorvathMammal40.Manifest.May2020.manifest.csv
+input/mamm_chip_probes_265275085cfa.bam
 figures/
 models/
 iscans/human_test/
+output/f_effects_*.rds
+output/nbetas*.rds
+output/tbetas*.rds
 
 # Hidden/embargoed files and folders
 extras/
