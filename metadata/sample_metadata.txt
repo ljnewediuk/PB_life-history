@@ -1,9 +1,0 @@
-data_type sex	birth_date_range	sample_timespan	N_samples	notes
-Lifetime reproductive success	female	1980-2000	NA	402	truncated birth dates b/c sampling pre-1980 inconsistent and post-2000 bears haven't lived full reproductive lifespan
-Lifetime reproductive success	male	1980-2000	NA	226	truncated birth dates b/c sampling pre-1980 inconsistent and post-2000 bears haven't lived full reproductive lifespan
-Age at first reproduction	male	1962-2014	NA	380	NA
-Age at first reproduction	female	1962-2011	NA	698	NA
-Methylation	male	1962-2014	1988-2016	134	NA
-Methylation	female	1963-2013	1988-2018	144	NA
-Epigenetic age	male	1966-2014	1988-2016	71	NA
-Epigenetic age	female	1965-2008	1988-2016	63	NA
