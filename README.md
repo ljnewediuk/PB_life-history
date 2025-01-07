@@ -127,9 +127,9 @@ Input data includes:
 
 * HorvathMammal40.CanonicalManifest.3.2019.sesame.csv: Manifest file
 
-* HorvathMammal40.Manifest.May2020.manifest.csv: Manifest file (Large file in gitignore; available from clock foundation github)
+* HorvathMammal40.Manifest.May2020.manifest.csv: Manifest file
 
-* mamm_chip_probes_265275085cfa.bam: Mammal chip probes alignment (Large file in gitignore)
+* mamm_chip_probes_265275085cfa.bam: Mammal chip probes alignment
 
 Output data include:
 
@@ -147,14 +147,14 @@ Output data include:
 
 * detection_p_batch#.rds: Sample detection p-values for quality control
 
-* f_effects_####: Fitted effects from corresponding model (large files in gitignore)
+* f_effects_####: Fitted effects from corresponding model
 
 * updated_sample_sheet_PB_array#.rds: Original sample sheets with addition of locations for specific idat files in "iscans" folder
     * chip.ID.loc: unique chip id and location of sample in rows and columns on chip
     * Basename: location of corresponding idat file in iscans folder
 
 
-* nbetas_PB_array#.rds & tbetas_PB_array#.rds: Matrices of normalized betas and transposed normalized betas from raw idat files  (large files in gitignore)
+* nbetas_PB_array#.rds & tbetas_PB_array#.rds: Matrices of normalized betas and transposed normalized betas from raw idat files
   
 * lh_info_epi.rds: Age acceleration data for bears with life history data
    * BearID: unique bear ID
