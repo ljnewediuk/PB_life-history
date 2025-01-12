@@ -30,13 +30,13 @@ library(limma)
 # Load sample sheets
 sample_sheets <- readRDS('output/updated_sample_sheet_PB_array1.rds') %>%
   rbind(readRDS('output/updated_sample_sheet_PB_array2.rds')) %>%
-  rbind(readRDS('output/updated_sample_sheet_PB_array3.rds'))
+  rbind(readRDS('output/updated_sample_sheet_PB_array3.rds')) 
 
 # Load sample info
 sample_info <- readRDS('input/batch1_samples.rds') %>%
   rbind(readRDS('input/batch2_samples.rds')) %>%
   rbind(readRDS('input/batch3_samples.rds')) %>%
-  rename('Sample_Name' = sampleId)
+  dplyr::rename('Sample_Name' = sampleId)
 
 # Load relatedness data
 relatives <- readRDS('input/full_sibs.rds')
@@ -59,9 +59,9 @@ fit_limma <- function(betas = sample_sheets, samples = sample_info,
   design_mat <- betas %>%
     left_join(samples) %>%
     # Remove samples that failed or were poor quality
-    filter(! Sample_Name %in% 
+    filter(! Sample_Name %in%
              c('X09304_2001-09-06_Blood', 'X09407_1988-09-07_Blood',
-               'X12606_1997-08-28_Blood', 'X10776_1997-09-06_Blood', 
+               'X12606_1997-08-28_Blood', 'X10776_1997-09-06_Blood',
                'X10228_1998-08-31_Blood', 'X03292_2001-09-15_Blood',
                'X12697_2008-09-16_Skin', 'X09365_1988-09-29_Blood',
                'X12697_1997-09-22_Blood')) %>%
