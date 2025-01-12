@@ -147,6 +147,8 @@ Output data include:
 
 * detection_p_batch#.rds: Sample detection p-values for quality control
 
+* failed_QC_samples.rds: IDs of samples that failed all quality control tests (these samples are removed from the analysis)
+
 * f_effects_####: Fitted effects from corresponding model
 
 * updated_sample_sheet_PB_array#.rds: Original sample sheets with addition of locations for specific idat files in "iscans" folder
