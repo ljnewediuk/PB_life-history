@@ -42,15 +42,19 @@ Scripts include:
 
 03 - Building the polar bear clock using independent testing and training data with glmnet
 
-04 - Summarizing lifetime reproductive success and ages at first reproduction for bears in pedigree
+04 - Estimating new ages from n = 94 bears in a later batch
 
-05 - Bayesian GLMs for testing relationships between age acceleration and birth year, age acceleration and age at first reproduction, and lifetime reproductive success and age at first reproduction
+05 - Clock performance metrics (median absolute error and correlation), creating a table to summarize testing and training samples for the supplement, and ploting the clock
 
-06 - Fitted effects from Bayesian GLM models
+06 - Summarizing lifetime reproductive success and ages at first reproduction for bears in pedigree
 
-07 - Plots in manuscript
+07 - Bayesian GLMs for testing relationships between age acceleration and birth year, age acceleration and age at first reproduction, and lifetime reproductive success and age at first reproduction
 
-08 - Animal models for estimating heritability of lifetime reproductive success
+08 - Fitted effects from Bayesian GLM models
+
+09 - Model plots in manuscript (Figures 3-5)
+
+10 - Animal models for estimating heritability of lifetime reproductive success
 
 X1 - (Supplement) Test of the polar bear clock to predict age in human samples
 
@@ -133,7 +137,7 @@ Input data includes:
 
 Output data include:
 
-* PB_clock_ages.rds: Aged bears (n = 134) using polar bear epigenetic clock
+* PB_clock_ages.rds: Original bears (n = 134) aged using polar bear epigenetic clock
    * SampleID: unique sample ID including bear ID, date, and sample type
    * BearID: unique bear ID
    * Age: Age of bear at time of sampling
@@ -142,6 +146,17 @@ Output data include:
    * AgePredict: predicted epigenetic age based on polar bear clock
    * AgeAccel: Residual from lm(AgePredict ~ Age)
    * yr: year of collection
+   
+* WH_combined_ages.rds: Original n = 134 bears and n = 94 additional samples processed and aged in a later batch
+  * Sample_Name: unique sample ID including bear ID, date, and sample type
+  * BearID: unique bear ID
+  * Spec: tissue type (blood or skin)
+  * YMD: Year, month, and day of sample collection
+  * Sex: F = female; M = male
+  * Born: Birth year of the bear
+  * Age: Age of bear at time of sampling
+  * AgePredict: predicted epigenetic age based on polar bear clock
+  * AgeAccel: Residual from lm(AgePredict ~ Age)
  
 * clock_Cpgs.rds: CpG sites included in clock
 
@@ -183,4 +198,13 @@ Output data include:
    * LRS: lifetime reproductive success
 
 * mcmc_LRS.rds: MCMCglmm animal model produced using true pedigree data in script 8
+
+* supplementary_bear_data.csv: Information about samples used for training and testing
+  * ID: unique bear ID
+  * DateSampled: Year, month, and day of sample collection
+  * SampleType: tissue type (blood or skin)
+  * Age: Age of bear at time of sampling
+  * Sex: F = female; M = male
+  * Testing: Was the sample used for predicting (yes/no)?
+  * Training: Was the sample used to train the clock (yes/no)?
 
