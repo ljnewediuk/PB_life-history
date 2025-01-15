@@ -1,5 +1,5 @@
 
-# 04 - Polar bear clock ====
+# 03 - Polar bear clock ====
 
 # Author: Levi Newediuk
 
@@ -14,6 +14,8 @@
 library(tidyverse)
 library(glmnet)
 
+# 1 Load data and source functions ====
+
 # Load samples that failed QC
 failed_QC <- readRDS('output/failed_QC_samples.rds')
 
@@ -26,14 +28,17 @@ probes <- readRDS('output/clock_Cpgs.rds')
 # Source function for cleaning the betas
 source('functions/CleanBetas.R')
 
-# Clean betas in batches 1-3 and separate into training and testing
+# 2 Clean data ==== 
+
+# Clean betas in batches 1-3 and separate into training and testing (this 
+# function also removes samples that did not pass QC, excludes siblings from
+# the clock training data, and subsets probes to those identified in the EWAS)
 meth_dat <- cleanBetas(batches = 1:3, failed_s = failed_QC, 
                        excl_oth = sibs, keep_p = probes, sep_train = T)
 
 # Specify training and testing data
 meth_betas_train <- meth_dat$train
 meth_betas_test <- meth_dat$test
-
 
 # List IDs of training and testing bears
 train_bears <- meth_betas_train %>%
@@ -71,7 +76,7 @@ betasLoop <- meth_betas_train_m
 ageLoop <- as.numeric(age_df[age_df$SampleID %in% meth_betas_train$SampleID ,]$Age)
 
 # Make sure ages for training match training samples
-age_df[age_df$SampleID %in% meth_betas_train$SampleID ,]$chip.ID.loc == rownames(meth_betas_train_m)
+meth_betas_train$chip.ID.loc == rownames(meth_betas_train_m)
 
 set.seed(2)
 
