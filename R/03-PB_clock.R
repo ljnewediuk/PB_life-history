@@ -5,7 +5,7 @@
 
 #===============================================================================
 #POLAR BEAR EPIGENETICS
-#Fit polar bear clock
+#Fit polar bear clock and save clock and predictions
 #===============================================================================
 
 
@@ -40,11 +40,14 @@ meth_dat <- cleanBetas(batches = 1:3, failed_s = failed_QC,
 meth_betas_train <- meth_dat$train
 meth_betas_test <- meth_dat$test
 
-# List IDs of training and testing bears
+# List IDs of training and testing samples
 train_bears <- meth_betas_train %>%
-  pull(BearID)
+  pull(SampleID)
 test_bears <- meth_betas_test %>%
-  pull(BearID)
+  pull(SampleID)
+
+# Add sample IDs to list
+PB_clock_IDs <- list(train = train_bears, test = test_bears)
 
 # Get matrix of betas for training data
 meth_betas_train_m <- meth_betas_train %>%
@@ -96,58 +99,9 @@ age_preds <-  age_preds %>%
   mutate(AgeAccel = lm(age_preds$AgePredict ~ age_preds$Age)$residuals,
          # Add year
          yr = as.numeric(substr(SampleID, 8, 11)),
-         Born = yr - floor(Age)) %>%
-  group_by(BearID) %>%
-  summarize(AgeAccel = mean(AgeAccel), Born = unique(Born))
+         Born = yr - floor(Age))
 
-summary(lm(AgeAccel ~ Born, data = age_preds))
-
-# 7 Plot clock ====
-
-# Calculate median absolute error, correlation, and label for plot
-age_mae <- median(abs(age_preds$AgePredict - age_preds$Age))
-age_corr <- as.numeric(cor.test(age_preds$AgePredict, age_preds$Age)$estimate)
-mae_label <- paste0('mae = ', round(age_mae, 1))
-corr_label <- paste0('correlation = ', round(age_corr, 2))
-
-ggplot() +
-  geom_abline(intercept = 0, slope = 1, linetype = 'dashed') +
-  geom_smooth(data = age_preds, aes(x = Age, y = AgePredict), 
-              colour = 'black', linewidth = 1.5, method = 'lm', se = F) +
-  geom_point(data = age_preds, aes(x = Age, y = AgePredict, colour = Spec), size = 2) +
-  annotate(geom = 'text', x = 23, y = 0, vjust = 2, label = mae_label, size = 6) +
-  annotate(geom = 'text', x = 23, y = 0, vjust = 0, label = corr_label, size = 6) +
-  scale_colour_manual(values = c('#d62d20', '#536878')) +
-  ylab('Epigenetic age') + xlab('Chronological age') +
-  theme(plot.margin = unit(c(0.5, 0.5, 1, 1), 'cm'),
-        panel.background = element_rect(fill = 'white', colour = 'black'),
-        panel.grid = element_blank(),
-        axis.title.x = element_text(colour = 'black', size = 18, vjust = -5),
-        axis.title.y = element_text(colour = 'black', size = 18, vjust = 5),
-        axis.text = element_text(colour = 'black', size = 18),
-        legend.position = c(0.2, 0.8),
-        legend.title = element_blank(),
-        legend.text = element_text(size = 18, colour = 'black'))
-
-# 8 - Plot age acceleration ~ birth year ====
-
-age_preds %>%
-  mutate(Born = yr - floor(Age)) %>%
-  # filter(! SampleID == 'X10994_1988-09-23_Blood') %>%
-  ggplot() +
-  geom_smooth(aes(x = Born, y = AgeAccel), 
-              method = 'lm', colour = 'black') +
-  scale_colour_manual(values = c('#d62d20', '#536878')) +
-  geom_point(aes(x = Born, y = AgeAccel, colour = Spec)) +
-  theme(plot.margin = unit(c(0.5, 0.5, 1, 1), 'cm'),
-        panel.background = element_rect(fill = 'white', colour = 'black'),
-        panel.grid = element_blank(),
-        axis.title.x = element_text(colour = 'black', size = 18, vjust = -5),
-        axis.title.y = element_text(colour = 'black', size = 18, vjust = 5),
-        axis.text = element_text(colour = 'black', size = 18),
-        legend.position = 'none')
-
-# 9 Get clock coefficients/bears in data frames ====
+# 9 Clock coefficients in data frame ====
 
 # Clock coefs
 PB_clock <- as.matrix(coef(cvfit, s = 'lambda.min')) %>%
@@ -156,16 +110,7 @@ PB_clock <- as.matrix(coef(cvfit, s = 'lambda.min')) %>%
   dplyr::rename('beta' = s1) %>%
   filter(beta != 0)
 
-# Make table of training/testing bears for supplement
-supp_table <- samp_specs %>%
-  mutate(ID = substr(SampleID, 1, 6),
-         DateSampled = substr(SampleID, 8, 17),
-         Testing = ifelse(ID %in% test_bears, 'Yes', 'No'),
-         Training = ifelse(ID %in% train_bears, 'Yes', 'No')) %>%
-  rename('SampleType' =  Spec) %>%
-  select(ID, DateSampled, SampleType, Age, Sex, Testing, Training)
-
-# 10 Save ====
+# 10 Save clock, predicted ages, and training/testing IDs ====
 
 # Clock cpgs as .rds, .csv
 saveRDS(PB_clock, 'output/PB_clock.rds')
@@ -174,5 +119,5 @@ write.csv(PB_clock, 'output/PB_clock.csv')
 # Save predicted ages
 saveRDS(age_preds, 'output/PB_clock_ages.rds')
 
-# Save table for supplement
-write.csv(supp_table, 'output/supplementary_bear_data.csv')
+# Save clock sample IDs
+saveRDS(PB_clock_IDs, 'output/PB_clock_IDs.rds')
