@@ -1,5 +1,20 @@
 
+# 04 - Estimate new ages ====
+
+# Author: Levi Newediuk
+
+#===============================================================================
+#POLAR BEAR EPIGENETICS
+#Estimate new ages for batch 9 containing more western Hudson Bay samples, 
+#n = 96, and combine with the original western Hudson Bay samples
+#===============================================================================
+
+
+#------------------------------------------------------------------------------
+# load packages
 library(tidyverse)
+
+# 1 Load data and source functions ====
 
 # Source function for aging new samples
 source('functions/AgeSamples.R')
@@ -19,22 +34,13 @@ first_batch_ages <- readRDS('output/PB_clock_ages.rds') %>%
 # Load samples that failed QC
 failed_QC <- readRDS('output/failed_QC_samples.rds')
 
-# Age new samples in batch 9
+# 2 Age new samples in batch 9 ====
+
 WH_ages <- ageNew(batch_no = 9, clock = PB_clock, failed_s = failed_QC) %>%
   select(! Batch) %>%
   rbind(first_batch_ages) 
 
-# Get mean age accel for individuals
-mean_ages <- WH_ages %>% 
-  group_by(BearID) %>%
-  summarize(AgeAccel = mean(AgeAccel), Born = unique(Born))
+# 3 Save combined ages ====
 
-# Quick linear model
-summary(lm(AgeAccel ~ Born, data = mean_ages))
-
-# Quick plot
-mean_ages %>%
-  ggplot(aes(x = Born, y = AgeAccel)) +
-  geom_point() + 
-  geom_smooth(method = 'lm')
+saveRDS(WH_ages, 'output/WH_combined_ages.rds')
 
