@@ -6,7 +6,7 @@
 #===============================================================================
 #POLAR BEAR EPIGENETICS
 #Estimate new ages for batch 9 containing more western Hudson Bay samples, 
-#n = 96, and combine with the original western Hudson Bay samples
+#n = 96, and combine with the original test samples
 #===============================================================================
 
 
