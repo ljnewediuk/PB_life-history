@@ -104,4 +104,4 @@ ggsave('clock_panel.tiff', plot = last_plot(), path = 'figures/main/',
        device = 'tiff', dpi = 300, height = 22, width = 33, units = 'cm', bg = 'white')
 
 # Save table for supplement
-write.csv(supp_table, 'output/supplementary_bear_data.csv')
+write.csv(supp_table, 'output/supplementary_bear_data.csv', row.names = F)
