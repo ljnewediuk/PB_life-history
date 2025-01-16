@@ -60,7 +60,7 @@ breeding$dam <- bearPED$dam[match(breeding$BearID, bearPED$animal)]
 #and not after 2000 because 
 #maybe look earlier decades
 breeding <- breeding[breeding$Born <= 2000, ]                      
-breeding <- breeding[breeding$Born >= 1980, ]   
+breeding <- breeding[breeding$Born >= 1980, ]
 
 #------------------------------------------------------------------------------
 #match IDs in phenotypic data with pedigree data
