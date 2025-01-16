@@ -30,8 +30,8 @@ lh_pop_dat <- readRDS('output/lh_info_pop.rds') %>%
   # Scale and centre variables
   mutate(across(Born:LRS, list(sc = function(x) as.vector(scale(x, center = T))))) %>%
   # Filter individuals born after 2000 (we might not have captured their full
-  # reproductive lifespan)
-  filter(Born <= 2000)
+  # reproductive lifespan) and before 1980 (not enough comprehensive sampling)
+  filter(Born <= 2000 & Born >=1980)
 
 # With epigenetic data
 lh_epi_dat <- readRDS('output/lh_info_epi.rds') %>%
