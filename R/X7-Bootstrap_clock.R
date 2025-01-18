@@ -26,7 +26,7 @@ meth_dat <- cleanBetas(batches = 1:3, failed_s = failed_QC,
 # Set iterations
 it <- 1
 # Run while loop cross-validation
-while(it <= 50) {
+while(it <= 500) {
 
   print(it)
   
@@ -106,7 +106,7 @@ while(it <= 50) {
   } else {
     b_draws <- c(b_draws, b)
     mets <- mets %>%
-      bind_rows(data.frame(iteration = it, MAE, corr))
+      bind_rows(data.frame(iteration = it, MAE, corr, N = nrow(meth_betas_train)))
   }
   
   # Set new iterations
