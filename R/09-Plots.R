@@ -31,11 +31,11 @@ for(n in 1:length(fes)) {
 # Load life-history data
 lh_pop_dat <- readRDS('output/lh_info_pop.rds') %>%
   filter(! is.infinite(FirstRepro) | ! is.infinite(LastRepro)) %>%
-  # Scale and centre variables
-  mutate(across(Born:LRS, list(sc = function(x) as.vector(scale(x, center = T))))) %>%
-  # Filter individuals born after 2000 (we might not have captured their full
+  # Filter individuals born after 1996 (we might not have captured their full
   # reproductive lifespan)
-  filter(Born <= 2000 & Born >= 1980)
+  filter(Born <= 1996) %>%
+  # Scale and centre variables
+  mutate(across(Born:LRS, list(sc = function(x) as.vector(scale(x, center = T)))))
 
 # With epigenetic data
 lh_epi_dat <- readRDS('output/lh_info_epi.rds') %>%
@@ -95,21 +95,21 @@ lrs_fr_means <- f_effects_lrs_fr %>%
 # Plot LRS ~ first repro
 ggplot(f_effects_lrs_fr, aes(x = FirstRepro, y = value)) +
   geom_jitter(data = lh_pop_dat, aes(x = FirstRepro, y = LRS, colour = Born_sc), size = 3) +
-  stat_lineribbon(data = f_effects_lrs_fr[f_effects_lrs_fr$Born == 2000,],
+  stat_lineribbon(data = f_effects_lrs_fr[f_effects_lrs_fr$Born == 1995,],
                   .width = seq(from = .03, to = .975, by = .03),
                   alpha = .1, size = 0, fill = '#193A82') +
-  geom_line(data = lrs_fr_means[lrs_fr_means$Born == 2000,], colour = '#102A5C') +
-  stat_lineribbon(data = f_effects_lrs_fr[f_effects_lrs_fr$Born == 1990,],
-                  .width = seq(from = .03, to = .975, by = .03),
-                  alpha = .1, size = 0, fill = '#6B84C0') +
-  geom_line(data = lrs_fr_means[lrs_fr_means$Born == 1990,], colour = '#5268A0') +
+  geom_line(data = lrs_fr_means[lrs_fr_means$Born == 1995,], colour = '#102A5C') +
   stat_lineribbon(data = f_effects_lrs_fr[f_effects_lrs_fr$Born == 1980,],
                   .width = seq(from = .03, to = .975, by = .03),
+                  alpha = .1, size = 0, fill = '#6B84C0') +
+  geom_line(data = lrs_fr_means[lrs_fr_means$Born == 1980,], colour = '#5268A0') +
+  stat_lineribbon(data = f_effects_lrs_fr[f_effects_lrs_fr$Born == 1965,],
+                  .width = seq(from = .03, to = .975, by = .03),
                   alpha = .1, size = 0, fill = '#BDD4FF') +
-  geom_line(data = lrs_fr_means[lrs_fr_means$Born == 1980,], colour = '#94A9CC') +
+  geom_line(data = lrs_fr_means[lrs_fr_means$Born == 1965,], colour = '#94A9CC') +
   scale_colour_gradient(low = '#BDD4FF', high = '#193A82',
-                        breaks = c(-0.43, 0.45, 1.3), 
-                        labels = c(1980, 1990, 2000),
+                        breaks = c(-2.1, -0.4, 1.3), 
+                        labels = c(1965, 1980, 1995),
                         name = 'Year born') +
   theme(panel.background = element_rect(colour = 'black', fill = 'white', linewidth = 1.25),
         axis.text = element_text(size = 18, colour = 'black'),
