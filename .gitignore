@@ -14,7 +14,7 @@
 figures/
 models/
 iscans/human_test/
-output/bootstrap_clock_metrics.rds
+output/bootstrap_age_birth_draws.rds
 
 # Hidden/embargoed files and folders
 extras/
