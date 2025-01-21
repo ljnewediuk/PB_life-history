@@ -53,14 +53,11 @@ breeding <-read.csv("input/breeding.csv", header=T)
 # Add the dam information from bearPED to breeding
 breeding$dam <- bearPED$dam[match(breeding$BearID, bearPED$animal)]
 
-#subset data for time frame
-#for first look do birth years from 1980 to 2000
-#evan suggests truncating to 1980 because dont have enough sampling of LRS
-#  until 1980
-#and not after 2000 because 
-#maybe look earlier decades
-breeding <- breeding[breeding$Born <= 2000, ]                      
-breeding <- breeding[breeding$Born >= 1980, ]
+#subset data for time frame—birth years up to 1996 because we cannot fully
+#capture lifetime reproductive success for bears born after 1996 (reproductive
+#senescence is ~ age 20 and the pedigree was published in 2016)
+breeding <- breeding[breeding$Born <= 1996, ]                      
+# breeding <- breeding[breeding$Born >= 1980, ]
 
 #------------------------------------------------------------------------------
 #match IDs in phenotypic data with pedigree data
