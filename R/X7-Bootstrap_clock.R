@@ -20,7 +20,7 @@ source('functions/CleanBetas.R')
 # Clean betas in batches 1-3 and separate into training and testing (this 
 # function also removes samples that did not pass QC, excludes siblings from
 # the clock training data, and subsets probes to those identified in the EWAS)
-meth_dat <- cleanBetas(batches = 1:3, failed_s = failed_QC, 
+meth_dat <- cleanBetas(batches = c(1:3), failed_s = failed_QC, 
                        keep_p = probes, sep_train = F)
 
 # Set iterations
@@ -75,17 +75,21 @@ while(it <= 500) {
     # Predict model
     mutate(AgePredict = as.numeric(predict(cvfit, newx = meth_betas_test_m, 
                                            type = "response", s = "lambda.min")))
-  # Add residuals
-  age_preds <-  age_preds %>%
-    mutate(AgeAccel = lm(age_preds$AgePredict ~ age_preds$Age)$residuals,
-           # Add year
-           yr = as.numeric(substr(SampleID, 8, 11)),
-           Born = yr - floor(Age))
   
   # MAE
   MAE <- median(abs(age_preds$AgePredict - age_preds$Age))
   # Pearson's correlation
   corr <- as.numeric(cor.test(age_preds$AgePredict, age_preds$Age)$estimate)
+  
+  # Add residuals
+  age_preds <-  age_preds %>%
+    mutate(AgeAccel = lm(age_preds$AgePredict ~ age_preds$Age)$residuals,
+           # Add year
+           yr = as.numeric(substr(SampleID, 8, 11)),
+           Born = yr - floor(Age)) %>%
+    # Get mean age acceleration
+    group_by(BearID) %>%
+    summarize(Born = mean(Born), AgeAccel = mean(AgeAccel))
   
   # Fit model age acceleration ~ year of birth
   m <-  brm(AgeAccel ~ Born,
