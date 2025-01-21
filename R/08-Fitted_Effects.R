@@ -23,7 +23,7 @@ lh_pop_dat <- readRDS('output/lh_info_pop.rds') %>%
   mutate(across(Born:LRS, list(sc = function(x) as.vector(scale(x, center = T))))) %>%
   # Filter individuals born after 2000 (we might not have captured their full
   # reproductive lifespan)
-  filter(Born <= 2000 & Born >= 1980)
+  filter(Born <= 1996)
 
 # With epigenetic data
 lh_epi_dat <- readRDS('output/lh_info_epi.rds') %>%
@@ -78,8 +78,8 @@ f_accel_born <- fitted(accel_born_mod,
 
 # 3 Fitted effects for LRS ~ age at first reproduction model by decade ====
 
-# New data for model (-0.45, 0.45, and 1.3 correspond to 1980, 1990, 2000)
-nd_lrs_fr <- expand_grid(Born_sc = c(-1.3, 0.3, 1.9),
+# New data for model (-1.8, -0.15, and 1.6 correspond to 1965, 1980, 1995)
+nd_lrs_fr <- expand_grid(Born_sc = c(-1.8, -0.15, 1.6),
                          BearID = NA,
                          Sex = NA,
                          FirstRepro_sc = seq(
@@ -121,7 +121,29 @@ f_accel_fr <- fitted(accel_fr_mod,
   mutate(AgeAccel = value * sd(lh_epi_dat$AgeAccel) + mean(lh_epi_dat$AgeAccel),
          FirstRepro = FirstRepro_sc * sd(lh_epi_dat$FirstRepro) + mean(lh_epi_dat$FirstRepro))
 
-# 5 Save fitted effects ====
+# 5 Estimate how much "older" a bear would be if born in 2020 vs 1965 ====
+
+# New data for years
+nd_born_1965 <- data.frame(Born_sc = -2.2)
+nd_born_2022 <- data.frame(Born_sc = 1.9)
+
+# Draw from posterior and calculate difference
+age_diff_sc <- fitted(accel_born_mod, 
+                      newdata = nd_born_2022, 
+                      probs = c(0.025, 0.975),
+                      summary = F) - fitted(accel_born_mod,
+                                            newdata = nd_born_1965,
+                                            probs = c(0.025, 0.975),
+                                            summary = F) 
+
+# Unscale
+age_diff <- age_diff_sc * sd(epi_dat$AgeAccel) + mean(epi_dat$AgeAccel)
+
+# Get mean and IQR
+mean(age_diff)
+IQR(age_diff)
+
+# 6 Save fitted effects ====
 
 saveRDS(f_accel_born, 'output/f_effects_accel_born.rds')
 saveRDS(f_accel_fr, 'output/f_effects_accel_fr.rds')
