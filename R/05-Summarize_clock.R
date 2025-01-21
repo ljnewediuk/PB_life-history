@@ -33,16 +33,26 @@ epi_ages <- readRDS('output/WH_combined_ages.rds') %>%
 # Load IDs of samples used to make clock versus testing
 PB_clock_IDs <- readRDS('output/PB_clock_IDs.rds')
 
+# Load failed QC samples
+failedQC <- readRDS('output/failed_QC_samples.rds')
+
 # 2 Make table of training/testing bears for supplement ====
 
 supp_table <- sample_specs %>%
-  # If the sample is in the training data, specify as train, otherwise test
-  mutate(Testing = ifelse(! sampleId %in% PB_clock_IDs$train, 'Yes', 'No'),
-         Training = ifelse(sampleId %in% PB_clock_IDs$train, 'Yes', 'No')) %>%
+  # Distinguish sample by training, validation, or additional samples from after
+  # the clock was constructed
+  mutate(SampleType = case_when(sampleId %in% PB_clock_IDs$train ~ 'Training',
+                                sampleId %in% PB_clock_IDs$test ~ 'Validation',
+                                Batch == 9 ~ 'Additional')) %>%
+  # Omit NAs and samples that failed QC
+  na.omit() %>%
+  filter(! sampleId %in% failedQC) %>%
+  # Fix typo in tissue type
+  mutate(Spec = str_replace(Spec, '_Bloo', 'Blood')) %>%
   # Clean up columns
-  rename('ID' = id, 'SampleType' =  Spec, 
+  rename('ID' = id, 'SampleTissue' =  Spec, 
          'DateSampled' = YMD, 'Age' = age, 'Sex' = sex) %>%
-  select(ID, DateSampled, SampleType, Age, Sex, Testing, Training)
+  select(ID, DateSampled, SampleType, SampleTissue, Age, Sex)
 
 # 3 Calculate clock median absolute error and correlation ====
 
@@ -89,15 +99,15 @@ epi_repeats <- epi_ages %>%
 # Plot panel for each repeat bear and list
 ID_plots <- lapply(group_split(group_by(epi_repeats, BearID)), 
                     function(x) plotClock(x, panelP = T))
-ID_panels <- plot_grid(plotlist = ID_plots, labels = LETTERS[1:5], 
+ID_panels <- plot_grid(plotlist = ID_plots, labels = LETTERS[2:6], 
           label_size = 22, ncol = 1, align = 'v', label_x = -.005)
 
 # Plot all samples in testing data
 clock_plot <- plotClock(epi_ages)
-clock_panel <- plot_grid(clock_plot, labels = 'F', label_size = 22, ncol = 1)
+clock_panel <- plot_grid(clock_plot, labels = 'A', label_size = 22, ncol = 1)
 
 # Plot panels
-plot_grid(ID_panels, clock_panel, ncol = 2, rel_widths = c(0.5, 1))
+plot_grid(clock_panel, ID_panels, ncol = 2, rel_widths = c(1, 0.5))
 
 # Save plot
 ggsave('clock_panel.tiff', plot = last_plot(), path = 'figures/main/', 
