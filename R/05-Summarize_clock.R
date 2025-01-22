@@ -104,10 +104,20 @@ ID_panels <- plot_grid(plotlist = ID_plots, labels = LETTERS[2:6],
 
 # Plot all samples in testing data
 clock_plot <- plotClock(epi_ages)
-clock_panel <- plot_grid(clock_plot, labels = 'A', label_size = 22, ncol = 1)
+clock_w_label <- plot_grid(clock_plot, labels = 'A', label_size = 22, ncol = 1)
 
 # Plot panels
-plot_grid(clock_panel, ID_panels, ncol = 2, rel_widths = c(1, 0.5))
+clock_panel <- plot_grid(clock_w_label, ID_panels, ncol = 2, rel_widths = c(1, 0.5))
+
+# X and Y labels for ewas panel plot
+Ylab <- ggplot() + geom_text(aes(x = 0, y = 0), 
+                             label = 'Epigenetic age (years)', size = 9,angle = 90) + theme_void()
+Xlab <- ggplot() + geom_text(aes(x = 0, y = 0), 
+                             label = 'Chronological age (years)', size = 9, hjust = 0.5) + theme_void()
+
+# Add axis labels
+clock_panel_y <- plot_grid(Ylab, clock_panel, rel_widths = c(0.1, 1))
+plot_grid(clock_panel_y, Xlab, rel_heights = c(1, 0.05), ncol = 1)
 
 # Save plot
 ggsave('clock_panel.tiff', plot = last_plot(), path = 'figures/main/', 
