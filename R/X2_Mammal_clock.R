@@ -19,38 +19,34 @@ library(tidyverse)
 library(glmnet)
 library(cowplot)
 
-# Specify bad samples
-bad_samps <- c('X09304_2001-09-06_Blood', 'X09407_1988-09-07_Blood',
-                         'X12606_1997-08-28_Blood', 'X10776_1997-09-06_Blood', 
-                         'X10228_1998-08-31_Blood', 'X03292_2001-09-15_Blood',
-                         'X12697_2008-09-16_Skin', 'X09365_1988-09-29_Blood',
-                         'X12697_1997-09-22_Blood')
-
 # 1 Load data ====
+
+# Load samples that did not pass QC
+failed_samps <- readRDS('output/failed_QC_samples.rds')
 
 # Bind all batches into data frames
 sample_specs <- data.frame()
 sample_sheets <- data.frame()
 sample_cpgs <- data.frame()
-for(batch_no in 1:3) {
-  
+for(batch_no in c(1:3, 9)) {
+
   # Sample specs
   specs <- readRDS(paste0('input/batch', batch_no, '_samples.rds')) %>%
     select(sampleId, Spec, age, sex) %>%
     dplyr::rename('Sample_Name' = sampleId, 'Age' = age, 'Sex' = sex) %>%
     mutate(Year = substr(Sample_Name, 8, 11)) %>%
     # Filter bad samples
-    filter(! Sample_Name %in% bad_samps)
-  
+    filter(! Sample_Name %in% failed_samps)
+
   # Load updated sample sheet after normalizing and join with sample specs
-  sheet <- readRDS(paste0('output/updated_sample_sheet_PB_array', 
+  sheet <- readRDS(paste0('output/updated_sample_sheet_PB_array',
                                  batch_no, '.rds')) %>%
     select(Sample_Name, chip.ID.loc) %>%
     left_join(specs)
-  
+
   # Load CpGs
   # These data include species characteristics needed for clocks (gestation
-  # time, age at reproductive maturity, and maximum lifespan) and CGs 
+  # time, age at reproductive maturity, and maximum lifespan) and CGs
   cpgs <- readRDS(paste0('output/tbetas_PB_array', batch_no, '.rds')) %>%
     rownames_to_column('chip.ID.loc') %>%
     left_join(sheet) %>%
@@ -59,16 +55,16 @@ for(batch_no in 1:3) {
            averagedMaturity.yrs = 1734/365,
            maxAgeCaesar = 43.8) %>%
     #  Move sample characteristics to the beginning of the dataframe for easy location
-    relocate(c(Sample_Name, Age, Sex, Year, Spec, GestationTimeInYears:maxAgeCaesar), 
+    relocate(c(Sample_Name, Age, Sex, Year, Spec, GestationTimeInYears:maxAgeCaesar),
              .after = chip.ID.loc)
-  
+
   # Bind all specs
   sample_specs <- sample_specs %>% bind_rows(specs)
   # Bind sample sheets
   sample_sheets <- sample_sheets %>% bind_rows(sheet)
   # Bind all cpgs
   sample_cpgs <- sample_cpgs %>% bind_rows(cpgs)
-  
+
 }
 
 # 2 Load clock sites and set clock names ====
@@ -198,22 +194,18 @@ print(clock_performance)
 
 uc_clocks <- list()
 for(i in 2:3) {
-  # Make MAE label
-  age_mae <- clock_performance[i ,]$MAE
-  age_corr <- clock_performance[i ,]$correlation
-  mae_label <- paste0('mae = ', round(age_mae, 1))
-  corr_label <- paste0('correlation = ', round(age_corr, 2))
   # Get age predictions for clock
   plot_dat <- subset(output, select = c(Age, Spec, Born,
                                         get(paste0('DNAmAgeClock', i)),
                                         get(paste0('AccelClock', i))))
   colnames(plot_dat) <- c('Age', 'Spec', 'Born', 'AgePredict', 'AgeAccel')
     
-  clock_plot <- ggplot() +
+  # Plot universal clock by tissue
+  clock_plot <- ggplot(data = plot_dat, 
+                       aes(x = Age, y = AgePredict, colour = Spec)) +
     geom_abline(intercept = 0, slope = 1, linetype = 'dashed') +
-    geom_point(data = plot_dat, aes(x = Age, y = AgePredict, colour = Spec), size = 2) +
-    annotate(geom = 'text', x = 25, y = 1, label = mae_label, size = 6) +
-    annotate(geom = 'text', x = 21.5, y = 7, label = corr_label, size = 6) +
+    geom_point(size = 2) +
+    geom_smooth(method = 'lm', linewidth = 1.5, colour = 'black', se = F) +
     scale_colour_manual(values = c('#d62d20', '#536878')) +
     ylab('Epigenetic age') + xlab('Chronological age') +
     theme(plot.margin = unit(c(0.5, 0.5, 1, 2), 'cm'),
@@ -223,10 +215,9 @@ for(i in 2:3) {
           axis.title.y = element_text(colour = 'black', size = 18, vjust = 5),
           axis.text = element_text(colour = 'black', size = 18),
           legend.key = element_rect(colour = 'white'),
-          legend.position = c(0.2, 0.8),
-          legend.title = element_blank(),
-          legend.text = element_text(size = 18, colour = 'black'))
+          legend.position = 'none')
   
+  # Plot age accel ~ birth year relationship
   accel_plot <- ggplot() +
     geom_point(data = plot_dat, aes(x = Born, y = AgeAccel, colour = Spec), size = 2) +
     geom_smooth(data = plot_dat, aes(x = Born, y = AgeAccel, group = Spec, colour = Spec),
@@ -243,8 +234,13 @@ for(i in 2:3) {
           axis.text = element_text(colour = 'black', size = 18),
           legend.position = 'none')
   
-  uc_clocks[[paste0('UC clock ', i)]] <- 
-    plot_grid(clock_plot, accel_plot, ncol = 2, labels = c('A', 'B'), label_size = 20)
+  # Add panel plot to list
+  uc_clocks[[paste0('UC clock panel ', i)]] <- 
+    plot_grid(clock_plot, accel_plot, ncol = 2, labels = c('A', 'B'), 
+              label_size = 20)
+  
+  # Add basic clock plot to list
+  uc_clocks[[paste0('UC basic clock ', i)]] <- clock_plot
   
 }
 
