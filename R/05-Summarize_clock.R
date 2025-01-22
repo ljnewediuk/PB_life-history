@@ -25,13 +25,16 @@ for(B in c(1:3, 9)) {
   sample_specs <- bind_rows(sample_specs, S)
 }
 
+# Load IDs of samples used to make clock versus testing
+PB_clock_IDs <- readRDS('output/PB_clock_IDs.rds')
+
 # Load ages
 epi_ages <- readRDS('output/WH_combined_ages.rds') %>%
   # Factor tissue types so skin appears first in plots
-  mutate(Spec = factor(Spec, levels = c('Skin', 'Blood')))
-
-# Load IDs of samples used to make clock versus testing
-PB_clock_IDs <- readRDS('output/PB_clock_IDs.rds')
+  mutate(Spec = factor(Spec, levels = c('Skin', 'Blood')),
+         Sample_Type = ifelse(
+           Sample_Name %in% PB_clock_IDs$test, 'Testing', 'Additional')
+         )
 
 # Load failed QC samples
 failedQC <- readRDS('output/failed_QC_samples.rds')
@@ -56,22 +59,24 @@ supp_table <- sample_specs %>%
 
 # 3 Calculate clock median absolute error and correlation ====
 
+# Get only validation samples
+epi_vals <- epi_ages %>%
+  filter(Sample_Type == 'Testing')
+
 # MAE
-median(abs(epi_ages$AgePredict - epi_ages$Age))
+median(abs(epi_vals$AgePredict - epi_vals$Age))
 # Pearson's correlation
-as.numeric(cor.test(epi_ages$AgePredict, epi_ages$Age)$estimate)
+as.numeric(cor.test(epi_vals$AgePredict, epi_vals$Age)$estimate)
 
 # 5 Plot clock ====
 
 # Function to plot clock panel
-plotClock <- function(dat, panelP = F) {
+plotClock <- function(dat, panelP = F, alpha_col = F) {
   
   P <- ggplot(dat) +
     geom_abline(intercept = 0, slope = 1, linetype = 'dashed') +
     geom_smooth(aes(x = Age, y = AgePredict), 
                 colour = 'black', linewidth = 1.5, method = 'lm', se = F) +
-    geom_point(aes(x = Age, y = AgePredict, colour = Spec), size = 5) +
-    scale_colour_manual(values = c('#536878', '#d62d20')) +
     ylab('Epigenetic age (years)') + xlab('Chronological age (years)') +
     theme(plot.margin = unit(c(0.5, 0.5, 0.5, 1), 'cm'),
           panel.background = element_rect(fill = 'white', colour = 'black',
@@ -80,6 +85,18 @@ plotClock <- function(dat, panelP = F) {
           axis.title = element_blank(),
           axis.text = element_text(colour = 'black', size = 18),
           legend.position = 'none')
+  
+  if(isTRUE(alpha_col)) {
+    P <- P +
+      geom_point(aes(x = Age, y = AgePredict, colour = Spec, alpha = Sample_Type), 
+                 size = 5) +
+      scale_alpha_manual(values = c(0.3, 1)) +
+      scale_colour_manual(values = c('#536878', '#d62d20'))
+  } else {
+    P <- P +
+      geom_point(aes(x = Age, y = AgePredict, colour = Spec), size = 5) +
+      scale_colour_manual(values = c('#536878', '#d62d20'))
+  }
   
   if(isTRUE(panelP)) {
     P <- P + 
@@ -103,7 +120,7 @@ ID_panels <- plot_grid(plotlist = ID_plots, labels = LETTERS[2:6],
           label_size = 22, ncol = 1, align = 'v', label_x = -.005)
 
 # Plot all samples in testing data
-clock_plot <- plotClock(epi_ages)
+clock_plot <- plotClock(epi_ages, alpha_col = T) 
 clock_w_label <- plot_grid(clock_plot, labels = 'A', label_size = 22, ncol = 1)
 
 # Plot panels
