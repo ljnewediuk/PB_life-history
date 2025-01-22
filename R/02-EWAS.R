@@ -41,6 +41,9 @@ sample_info <- readRDS('input/batch1_samples.rds') %>%
 # Load relatedness data
 relatives <- readRDS('input/full_sibs.rds')
 
+# Load failed samples
+failed_QC <- readRDS('output/failed_QC_samples.rds')
+
 # 2 Subset blood and skin for limma ====
 
 # Get subset with skin only
@@ -59,12 +62,7 @@ fit_limma <- function(betas = sample_sheets, samples = sample_info,
   design_mat <- betas %>%
     left_join(samples) %>%
     # Remove samples that failed or were poor quality
-    filter(! Sample_Name %in%
-             c('X09304_2001-09-06_Blood', 'X09407_1988-09-07_Blood',
-               'X12606_1997-08-28_Blood', 'X10776_1997-09-06_Blood',
-               'X10228_1998-08-31_Blood', 'X03292_2001-09-15_Blood',
-               'X12697_2008-09-16_Skin', 'X09365_1988-09-29_Blood',
-               'X12697_1997-09-22_Blood')) %>%
+    filter(! Sample_Name %in% failed_QC) %>%
     # Fix mislabeled blood sample
     mutate(Spec = ifelse(Spec == '_Bloo', 'Blood', Spec))
   
