@@ -244,10 +244,37 @@ for(i in 2:3) {
   
 }
 
+# Make panel plot with universal clocks 2 & 3 together
+uc_clock2 <- uc_clocks$`UC basic clock 2` + 
+  labs(x = '', y = '') + 
+  theme(plot.margin = unit(c(rep(0.25, 3), 0.75), 'cm'),
+        panel.grid = element_line(linewidth = 0.5, colour = '#e5e5e5')) +
+  ylim(0, 52.5)
+
+uc_clock3 <- uc_clocks$`UC basic clock 3` + 
+  labs(x = '', y = '') + 
+  theme(plot.margin = unit(c(rep(0.25, 3), 0.75), 'cm'),
+        panel.grid = element_line(linewidth = 0.5, colour = '#e5e5e5')) +
+  ylim(0, 52.5)
+
+# Plot panels
+clock_panel <- plot_grid(uc_clock2, uc_clock3, 
+                         ncol = 2, labels = c('A', 'B'), label_size = 22)
+
+# X and Y labels for ewas panel plot
+Ylab <- ggplot() + geom_text(aes(x = 0, y = 0), 
+                             label = 'Epigenetic age (years)', 
+                             size = 7, angle = 90) + theme_void()
+Xlab <- ggplot() + geom_text(aes(x = 0, y = 0), 
+                             label = 'Chronological age (years)', 
+                             size = 7, hjust = 0.4) + theme_void()
+
+# Add axis labels
+clock_panel_y <- plot_grid(Ylab, clock_panel, rel_widths = c(0.1, 1))
+plot_grid(clock_panel_y, Xlab, rel_heights = c(1, 0.08), ncol = 1)
+
 # 6 Save plots ====
-ggsave('uc2_plot.tiff', plot = uc_clocks$`UC clock 2`, path = 'figures/supplementary/', 
-       device = 'tiff', dpi = 300, height = 12, width = 27, units = 'cm', bg = 'white')
-ggsave('uc3_plot.tiff', plot = uc_clocks$`UC clock 3`, path = 'figures/supplementary/', 
+ggsave('uc_combined_plot.tiff', plot = last_plot(), path = 'figures/supplementary/', 
        device = 'tiff', dpi = 300, height = 12, width = 27, units = 'cm', bg = 'white')
 
 # 7 Model age acceleration ~ birth year for both clocks ====
