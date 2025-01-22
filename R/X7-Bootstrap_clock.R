@@ -17,11 +17,31 @@ probes <- readRDS('output/clock_Cpgs.rds')
 # Source function for cleaning the betas
 source('functions/CleanBetas.R')
 
+# 2 Prep the data for the analysis ====
+
 # Clean betas in batches 1-3 and separate into training and testing (this 
 # function also removes samples that did not pass QC, excludes siblings from
 # the clock training data, and subsets probes to those identified in the EWAS)
 meth_dat <- cleanBetas(batches = c(1:3), failed_s = failed_QC, 
                        keep_p = probes, sep_train = F)
+
+# Additional data from batch 9
+meth_add <- cleanBetas(batches = 9, failed_s = failed_QC, 
+                       keep_p = probes, sep_train = F)
+
+# Get matrix of betas for batch 9 data
+meth_add_m <- meth_add %>%
+  # Make chip positions rownames
+  column_to_rownames('chip.ID.loc') %>%
+  # Remove extra cols
+  select(! SampleID:Spec) %>%
+  # Convert to matrix
+  as.matrix()
+
+# 3 Run 500 iterations ====
+# In each iteration, a test and training sample are taken, the clock is fit and
+# validated on the test set, then the test set is combined with additional data
+# to test the relationship between birth year and age acceleration
 
 # Set iterations
 it <- 1
@@ -69,21 +89,32 @@ while(it <= 500) {
   # Glmnet model (training betas ~ ages)
   cvfit <- cv.glmnet(betasLoop, ageLoop, nfolds = 10, alpha = .5)
   
-  # Add predictions as column to ages in training data
-  age_preds <- meth_betas_test %>%
+  # Add predictions as column to ages in testing data
+  preds_test <- meth_betas_test %>%
     select(SampleID:Spec) %>%
-    # Predict model
+    # Predict ages
     mutate(AgePredict = as.numeric(predict(cvfit, newx = meth_betas_test_m, 
                                            type = "response", s = "lambda.min")))
   
-  # MAE
-  MAE <- median(abs(age_preds$AgePredict - age_preds$Age))
-  # Pearson's correlation
-  corr <- as.numeric(cor.test(age_preds$AgePredict, age_preds$Age)$estimate)
+  # MAE for testing data (validation)
+  MAE <- median(abs(preds_test$AgePredict - preds_test$Age))
+  # Pearson's correlation for testing data (validation)
+  corr <- as.numeric(cor.test(preds_test$AgePredict, preds_test$Age)$estimate)
+  
+  # Add predictions as column to ages in additional data from batch 9, then bind
+  # the predictions from the testing data
+  preds_add <- meth_add %>%
+    select(SampleID:Spec) %>%
+    # Predict ages
+    mutate(AgePredict = as.numeric(predict(cvfit, 
+                                           newx = meth_add_m, 
+                                           type = "response", 
+                                           s = "lambda.min"))) %>%
+    bind_rows(preds_test)
   
   # Add residuals
-  age_preds <-  age_preds %>%
-    mutate(AgeAccel = lm(age_preds$AgePredict ~ age_preds$Age)$residuals,
+  age_accels <- preds_add %>%
+    mutate(AgeAccel = lm(preds_add$AgePredict ~ preds_add$Age)$residuals,
            # Add year
            yr = as.numeric(substr(SampleID, 8, 11)),
            Born = yr - floor(Age)) %>%
@@ -93,11 +124,24 @@ while(it <= 500) {
   
   # Fit model age acceleration ~ year of birth
   m <-  brm(AgeAccel ~ Born,
-            data = age_preds, family = gaussian, 
+            data = age_accels, family = gaussian, 
             iter = 10000, warmup = 5000, chains = 4, cores = 4, 
             prior = prior(normal(0,1), class = b),
             control = list(adapt_delta = 0.99, max_treedepth = 20),
             backend = 'cmdstanr')
+  
+  # Predict across range of birth years (1965-2021)
+  # New data
+  nd <- data.frame(Born = 1965:2021)
+  fitted_m <- fitted(m, probs = c(0.025, 0.975), newdata = nd, summary = F) %>%
+    # Make data frame and pivot
+    data.frame() %>%
+    pivot_longer(everything()) %>%
+    bind_cols(expand_grid(draws = 1:20000, nd)) %>%
+    group_by(Born) %>%
+    # Summarize mean age accel ~ birth year
+    summarize(AgeAccel = mean(value)) %>%
+    mutate(iteration = it) %>% relocate(iteration)
   
   # Pull out posterior draws
   b <- as.data.frame(m) %>%
@@ -105,10 +149,15 @@ while(it <= 500) {
   
   # Add metrics and posterior draws to growing objects
   if(it == 1) {
+    # Posterior draws
     b_draws <- b
+    # Posterior predictive mean age accel ~ birth year relationship
+    b_preds <- fitted_m
+    # Clock metrics
     mets <- data.frame(iteration = 1, MAE, corr, N = nrow(meth_betas_train))
   } else {
     b_draws <- c(b_draws, b)
+    b_preds <- bind_rows(b_preds, fitted_m)
     mets <- mets %>%
       bind_rows(data.frame(iteration = it, MAE, corr, N = nrow(meth_betas_train)))
   }
@@ -118,7 +167,41 @@ while(it <= 500) {
   
 }
 
+# 4 Save objects ====
+
 saveRDS(b_draws, 'output/bootstrap_age_birth_draws.rds')
+saveRDS(b_preds, 'output/bootstrap_posterior_pred.rds')
 saveRDS(mets, 'output/bootstrap_clock_metrics.rds')
+
+# 5 Summarize the bootstrap clock metrics ====
+
+# Mean MAE and confidence intervals
+mean(mets$MAE)
+quantile(mets$MAE, c(0.025, 0.975))
+
+# Mean Pearson's correlation and confidence intervals
+mean(mets$corr)
+quantile(mets$corr, c(0.025, 0.975))
+
+# Mean and credible intervals of age acceleration ~ birth year slope
+mean(b_draws)
+quantile(b_draws, c(0.025, 0.975))
+
+# 6 Plot the posterior predictions ====
+
+b_preds %>%
+  ggplot(aes(x = Born, y = AgeAccel, group = iteration)) +
+  geom_line(colour = '#425d9c', alpha = 0.1) +
+  theme(panel.background = element_rect(colour = 'black', fill = 'white', linewidth = 1.25),
+        axis.text = element_text(size = 18, colour = 'black'),
+        axis.title.y = element_text(size = 18, colour = 'black', vjust = 3),
+        axis.title.x = element_text(size = 18, colour = 'black', vjust = -3),
+        plot.margin = unit(c(0.25, 0.25, 0.75, 0.75), 'cm'),
+        panel.grid = element_line(linewidth = 0.5, colour = '#e5e5e5')) +
+  xlab('Year of birth') + ylab('Age acceleration (years)')
+
+# Save plot
+ggsave('bootstrap_clock_preds.tiff', plot = last_plot(), 
+       device = 'tiff', path = 'figures/supplementary', dpi = 300, height = 12, width = 14, units = 'cm', bg = 'white')
 
 
