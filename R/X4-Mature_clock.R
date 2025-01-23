@@ -131,6 +131,9 @@ clock_plot <- ggplot(data = age_vals, aes(x = Age, y = AgePredict, colour = Spec
 library(brms)
 
 model_dat <- age_accel %>%
+  group_by(BearID) %>% 
+  summarize(Born = mean(Born), AgeAccel = mean(AgeAccel)) %>%
+  ungroup() %>%
   mutate(across(c(AgeAccel, Born), 
                 list(sc = function(x) as.vector(scale(x, center = T)))))
 
