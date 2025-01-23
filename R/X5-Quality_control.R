@@ -51,7 +51,6 @@ QC_checks %>%
          Label = ifelse(detection_p > 0.1, Sample_Name, '')) %>%
   ggplot(aes(x = YrSampled, y = detection_p)) +
   geom_point(colour = 'black', size = 2) +
-  geom_text(aes(label = Label), position = position_jitter(), hjust = -.1) +
   ylab('Detection p-value') + xlab('Sample year') +
   theme(plot.margin = unit(c(0.5, 0.5, 1, 1), 'cm'),
         panel.background = element_rect(fill = 'white', colour = 'black'),
@@ -59,10 +58,6 @@ QC_checks %>%
         axis.title.x = element_text(colour = 'black', size = 18, vjust = -5),
         axis.title.y = element_text(colour = 'black', size = 18, vjust = 5),
         axis.text = element_text(colour = 'black', size = 18))
-
-# Save plots
-ggsave('detection_p_vals.tiff', plot = last_plot(), 
-       device = 'tiff', path = 'figures/extended', dpi = 300, height = 12, width = 18, units = 'cm', bg = 'white')
 
 # Also do so for non-outliers
 QC_checks %>%
@@ -77,6 +72,10 @@ ggplot() +
         axis.title.y = element_text(colour = 'black', size = 18, vjust = 5),
         axis.text = element_text(colour = 'black', size = 18)) +
   ylim(0, 0.1)
+
+# Save plots
+ggsave('detection_p_vals.tiff', plot = last_plot(), 
+       device = 'tiff', path = 'figures/supplementary', dpi = 300, height = 12, width = 18, units = 'cm', bg = 'white')
 
 # Run PCAs to visually check samples that cluster away from others
 betas_ord <- t_betas %>%
