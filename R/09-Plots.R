@@ -198,5 +198,5 @@ plot_grid(plotlist = all_plots, nrow = 1)
 
 # Save plots
 ggsave('pp_checks.tiff', plot = last_plot(), 
-       device = 'tiff', path = 'figures/extended', dpi = 300, height = 12, width = 25, units = 'cm', bg = 'white')
+       device = 'tiff', path = 'figures/supplementary', dpi = 300, height = 12, width = 25, units = 'cm', bg = 'white')
 
