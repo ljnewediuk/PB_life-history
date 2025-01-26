@@ -59,14 +59,10 @@ supp_table <- sample_specs %>%
 
 # 3 Calculate clock median absolute error and correlation ====
 
-# Get only validation samples
-epi_vals <- epi_ages %>%
-  filter(Sample_Type == 'Testing')
-
 # MAE
-median(abs(epi_vals$AgePredict - epi_vals$Age))
+median(abs(epi_ages$AgePredict - epi_ages$Age))
 # Pearson's correlation
-as.numeric(cor.test(epi_vals$AgePredict, epi_vals$Age)$estimate)
+as.numeric(cor.test(epi_ages$AgePredict, epi_ages$Age)$estimate)
 
 # 5 Plot clock ====
 
