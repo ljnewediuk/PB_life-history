@@ -22,21 +22,15 @@ source('functions/CleanBetas.R')
 # Clean betas in batches 1-3 and separate into training and testing (this 
 # function also removes samples that did not pass QC, excludes siblings from
 # the clock training data, and subsets probes to those identified in the EWAS)
-meth_dat <- cleanBetas(batches = c(1:3), failed_s = failed_QC, 
+meth_dat <- cleanBetas(batches = c(1:3, 9), failed_s = failed_QC, 
                        keep_p = probes, sep_train = F)
 
-# Additional data from batch 9
-meth_add <- cleanBetas(batches = 9, failed_s = failed_QC, 
-                       keep_p = probes, sep_train = F)
-
-# Get matrix of betas for batch 9 data
-meth_add_m <- meth_add %>%
-  # Make chip positions rownames
-  column_to_rownames('chip.ID.loc') %>%
-  # Remove extra cols
-  select(! SampleID:Spec) %>%
-  # Convert to matrix
-  as.matrix()
+# Get bears with multiple samples
+multi_samps <- meth_dat %>%
+  group_by(BearID) %>%
+  summarize(N = n()) %>%
+  filter(N >= 2) %>%
+  pull(BearID)
 
 # 3 Run 500 iterations ====
 # In each iteration, a test and training sample are taken, the clock is fit and
@@ -47,14 +41,14 @@ meth_add_m <- meth_add %>%
 it <- 1
 # Run while loop cross-validation
 while(it <= 500) {
-
+  
   print(it)
   
   # Specify training and testing data
   meth_betas_train <- meth_dat %>%
     group_by(Age, Spec, Sex) %>%
     sample_n(1) %>%
-    filter(! BearID %in% sibs)
+    filter(! BearID %in% sibs & ! BearID %in% multi_samps)
   
   meth_betas_test <- meth_dat %>%
     filter(! SampleID %in% meth_betas_train$SampleID)
@@ -101,20 +95,10 @@ while(it <= 500) {
   # Pearson's correlation for testing data (validation)
   corr <- as.numeric(cor.test(preds_test$AgePredict, preds_test$Age)$estimate)
   
-  # Add predictions as column to ages in additional data from batch 9, then bind
-  # the predictions from the testing data
-  preds_add <- meth_add %>%
-    select(SampleID:Spec) %>%
-    # Predict ages
-    mutate(AgePredict = as.numeric(predict(cvfit, 
-                                           newx = meth_add_m, 
-                                           type = "response", 
-                                           s = "lambda.min"))) %>%
-    bind_rows(preds_test)
   
   # Add residuals
-  age_accels <- preds_add %>%
-    mutate(AgeAccel = lm(preds_add$AgePredict ~ preds_add$Age)$residuals,
+  age_accels <- preds_test %>%
+    mutate(AgeAccel = lm(preds_test$AgePredict ~ preds_test$Age)$residuals,
            # Add year
            yr = as.numeric(substr(SampleID, 8, 11)),
            Born = yr - floor(Age)) %>%
