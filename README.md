@@ -42,7 +42,7 @@ Scripts include:
 
 03 - Building the polar bear clock using independent testing and training data with glmnet
 
-04 - Estimating new ages from n = 94 bears in a later batch
+04 - Estimating new ages from n = 94 bears in the later batch
 
 05 - Clock performance metrics (median absolute error and correlation), creating a table to summarize testing and training samples for the supplement, and ploting the clock
 
@@ -56,7 +56,7 @@ Scripts include:
 
 10 - Animal models for estimating heritability of lifetime reproductive success
 
-X1 - (Supplement) Test of the polar bear clock to predict age in human samples
+X1 - (Supplement) Code used for volcano plots showing sites correlated with age, tissue, and sex
 
 X2 - (Supplement) Test of polar bear samples aged using universal mammal clock
 
@@ -64,13 +64,15 @@ X3 - (Supplement) Test clock using early, less stressed bears to predict age in 
 
 X4 - (Supplement) Test clock using mature bears to predict age in mature bears
 
-X5 - (Supplement) Quality control (detection p-values)
+X5 - (Supplement) Quality control (detection p-values and PCAs)
 
-X6 - (Supplement) Check for any difference in aging rates over time by tissue
+X6 - (Supplement) Check for any difference in aging rates over time by tissue or sex
+
+X7 - (Supplement) Resample individuals and sites and re-fit clock to test for overfitting
 
 Folders:
 
-"iscans" folder contains the raw R/G idat files for processing
+"iscans" folder contains the raw R/G idat files for processing, separated by batch. Samples used for clock development came from batches 1-3, and validation was done with batch 9 and the remaining batch 1-3 samples not used for clock development
 
 Input data includes:
 
@@ -93,7 +95,7 @@ Input data includes:
     * NumCubs: number of cubs with bear
     * ABearCodeListX: Accompanying bears with bear ID, sex, and age
 
-* bearPED.csv: Bear pedigree data from Malenfant et al. 2016
+* bearPED.csv: Bear pedigree data from Malenfant et al. 2016 (temporarily embargoed)
     * id: bear ID
     * dam: female parent of bear
     * sire: male parent of bear
@@ -107,9 +109,9 @@ Input data includes:
     * LRS: lifetime reproductive success
     * Sex: F = female; M = male
 
-* simBreeding.csv: Life history info from simulated pedigree to run reproducible example in script 8. NOTE: SIMULATED DATA. REAL DATA ARE EMBARGOED FOR DATA SHARING RESTRICTIONS.
+* simBreeding.csv: Life history info from simulated pedigree to run reproducible example of animal models (script 10). NOTE: SIMULATED DATA. REAL DATA ARE EMBARGOED FOR DATA SHARING RESTRICTIONS.
 
-* simBearPED.csv: Simulated pedigree to run reproducible example in script 8. NOTE: SIMULATED DATA. REAL DATA ARE EMBARGOED FOR DATA SHARING RESTRICTIONS.
+* simBearPED.csv: Simulated pedigree to run reproducible example of animal models (script 10). NOTE: SIMULATED DATA. REAL DATA ARE EMBARGOED FOR DATA SHARING RESTRICTIONS.
 
 * full_sibs.rds: Character vector of bear IDs that are full siblings or offspring of other bears in the aging set
 
@@ -126,14 +128,14 @@ Input data includes:
     * Stripe: location of sample in rows and columns of chip, each with two columns (C) and 6 rows (R)
     * row: row of 96-well plate
     * column: column of 96-well plate
-    
-* human_sample_info.txt: Sample information from human idats (accession GSE184221) used to test the ability of the polar bear clock to predict age in other species
 
 * HorvathMammal40.CanonicalManifest.3.2019.sesame.csv: Manifest file
 
 * HorvathMammal40.Manifest.May2020.manifest.csv: Manifest file
 
 * mamm_chip_probes_265275085cfa.bam: Mammal chip probes alignment
+
+* mammclock#.csv: Universal mammal clocks (from Lu et al. 2023)
 
 Output data include:
 
@@ -147,7 +149,7 @@ Output data include:
    * AgeAccel: Residual from lm(AgePredict ~ Age)
    * yr: year of collection
    
-* WH_combined_ages.rds: Original n = 134 bears and n = 94 additional samples processed and aged in a later batch
+* WH_combined_ages.rds: Original n = 134 bears and n = 94 additional samples processed and aged in the later batch 9
   * Sample_Name: unique sample ID including bear ID, date, and sample type
   * BearID: unique bear ID
   * Spec: tissue type (blood or skin)
@@ -166,7 +168,7 @@ Output data include:
 
 * f_effects_####: Fitted effects from corresponding model
 
-* updated_sample_sheet_PB_array#.rds: Original sample sheets with addition of locations for specific idat files in "iscans" folder
+* updated_sample_sheet_PB_array#.rds: Original sample sheets with addition of locations for specific idat files in "iscans" folder for joining
     * chip.ID.loc: unique chip id and location of sample in rows and columns on chip
     * Basename: location of corresponding idat file in iscans folder
 
@@ -197,7 +199,7 @@ Output data include:
    * LostLitts: Estimated number of litters lost over lifetime
    * LRS: lifetime reproductive success
 
-* mcmc_LRS.rds: MCMCglmm animal model produced using true pedigree data in script 8
+* mcmc_LRS.rds: MCMCglmm animal model produced using true pedigree data in script 10
 
 * supplementary_bear_data.csv: Information about samples used for training and testing
   * ID: unique bear ID
@@ -208,3 +210,8 @@ Output data include:
   * Testing: Was the sample used for predicting (yes/no)?
   * Training: Was the sample used to train the clock (yes/no)?
 
+* limma_XXXX.rds: Limma models specifying relationship of each site with variables age, blood/skin, and tissue/sex
+
+* bootstrap_clock_metrics: Median absolute errors and correlations from 500 resampled clocks (see script X7)
+
+* bootstrap_posterior_pred.rds: Posterior predictive distribution combined from all resampled clocks in script X7
