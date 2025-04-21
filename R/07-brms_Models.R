@@ -1,5 +1,5 @@
 
-# 05 - Models ====
+# 05 - brms Models ====
 
 # Author: Levi Newediuk
 
@@ -64,6 +64,7 @@ accel_fr_mod <- brm(AgeAccel_sc ~ FirstRepro_sc,
                     data = lh_epi_dat, family = gaussian, 
                     iter = 10000, warmup = 5000, chains = 4, cores = 4, 
                     prior = prior(normal(0,1), class = b),
+                    prior(normal(0,5), class = 'Intercept'),
                     control = list(adapt_delta = 0.99, max_treedepth = 18),
                     backend = 'cmdstanr')
 
@@ -72,7 +73,9 @@ lrs_fr_mod <-  brm(LRS ~ FirstRepro_sc*Born_sc,
                    data = lh_pop_dat, 
                    family = negbinomial(link = 'log', link_shape = 'log'), 
                    iter = 10000, warmup = 5000, chains = 4, cores = 4, 
-                   prior = prior(normal(0,1), class = b),
+                   prior = c(prior(normal(0,1), class = b),
+                             prior(normal(0,5), class = 'Intercept'),
+                             prior(normal(0, 2), class = 'shape')),
                    control = list(adapt_delta = 0.99, max_treedepth = 20),
                    backend = 'cmdstanr')
 
