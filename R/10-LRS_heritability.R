@@ -56,8 +56,7 @@ breeding$dam <- bearPED$dam[match(breeding$BearID, bearPED$animal)]
 #subset data for time frame—birth years up to 1996 because we cannot fully
 #capture lifetime reproductive success for bears born after 1996 (reproductive
 #senescence is ~ age 20 and the pedigree was published in 2016)
-breeding <- breeding[breeding$Born <= 1996, ]                      
-# breeding <- breeding[breeding$Born >= 1980, ]
+breeding <- breeding[breeding$Born <= 1996, ]
 
 #------------------------------------------------------------------------------
 #match IDs in phenotypic data with pedigree data
@@ -99,7 +98,7 @@ breeding_ped <- breeding_ped %>% subset(Sex != "NA" & Sex != "U")
 breeding_ped <- breeding_ped %>% subset(dam != "NA" & dam != "U")                 
 str(breeding_ped)
 num_unique_ids <- breeding_ped %>% distinct(BearID) %>% nrow()
-#1077 individuals
+#456 individuals
 #------------------------------------------------------------------------------
 
 #------------------------------------------------------------------------------
@@ -144,6 +143,7 @@ hist(male_lrs,
      xlim=c(0, 20),
      ylim=c(0, 500),
      col="blue")
+
 #------------------------------------------------------------------------------
 
 #===============================================================================
@@ -155,28 +155,39 @@ hist(male_lrs,
 #prior allows model to fit different variance structures
 #G(additive genetic variance matrix), R(residual variance matrix)
 
-#relatively uninformative, equivalent to an inverse-gamma prior with 
-# shape and scale equal to 0.001
+#V = 1 nu = 1 is relatively uninformative, equivalent to an inverse-gamma prior
+#with shape and scale equal to 0.001
 #size of genetic and residual variance similar assumed to be similar in prior
 
 #nu: degree of belief parameter (0.002 tells not believe prior expectation)
 #V:prior expectation 
+#For uninformative priors, nu = 0.002.
+
+#Parameter expanded priors have better behaviour when when the posterior 
+#distribution for the variances has support close to zero
+#If using parameter expansion, specify prior covariance matrix for alpha
 
 #poisson distribution
 #expect values of latent trait and their variance to be small since exponential 
 
-#1 random effect
-priorP1 <- list(R = list(V = 1, nu = 1),
-                G = list(G1 = list(V = 1, nu = 1, alpha.mu = 0, alpha.V = 1000)))
-#2 random effect
-priorP2 <- list(R = list(V = 1, nu = 1),
-                G = list(G1 = list(V = 1, nu = 1, alpha.mu = 0, alpha.V = 1000),
-                         G2 = list(V = 1, nu = 1, alpha.mu = 0, alpha.V = 1000)))
-#3 random effect
-priorP3 <- list(R = list(V = 1, nu = 1),
+# Weakly informative inverse-Gamma priors
+priorIG <- list(R = list(V = 1, nu = 1),
+                G = list(G1 = list(V = 1, nu = 1),
+                         G2 = list(V = 1, nu = 1),
+                         G3 = list(V = 1, nu = 1)))
+
+# Weakly informative inverse-Gamma priors with parameter expansion
+priorPE <- list(R = list(V = 1, nu = 1),
                 G = list(G1 = list(V = 1, nu = 1, alpha.mu = 0, alpha.V = 1000),
                          G2 = list(V = 1, nu = 1, alpha.mu = 0, alpha.V = 1000),
                          G3 = list(V = 1, nu = 1, alpha.mu = 0, alpha.V = 1000)))
+
+# Very weakly informative near-flat priors with parameter expansion
+priorPEW <- list(R = list(V = 1, nu = 0.002),
+                G = list(G1 = list(V = 1, nu = 1, alpha.mu = 0, alpha.V = 1000),
+                         G2 = list(V = 1, nu = 1, alpha.mu = 0, alpha.V = 1000),
+                         G3 = list(V = 1, nu = 1, alpha.mu = 0, alpha.V = 1000)))
+
 #------------------------------------------------------------------------------
 
 #------------------------------------------------------------------------------
@@ -191,20 +202,36 @@ Ainv <- inverseA(bearPED)$Ainv
 #------------------------------------------------------------------------------
 
 #------------------------------------------------------------------------------
-# NOTE: iterations reduced for reproducible example
-model_LRS <- MCMCglmm(LRS ~ Sex,
+# Model with inverse-Gamma priors
+model_LRS.IG <- MCMCglmm(LRS ~ Sex,
                       random = ~animal + dam + Born,
                       ginv = list(animal = Ainv), 
                       family="poisson", data = breeding_ped, 
-                      nitt = 8000, thin = 10, 
-                      burnin = 1000, prior = priorP3)
-# saveRDS(model_LRS, file = "mcmc_LRS.rds")
+                      nitt = 65000, thin = 50, 
+                      burnin = 15000, prior = priorIG)
 
-model_LRS <- readRDS(file="output/mcmc_LRS.rds")
+# Model with parameter-expanded inverse-Gamma priors
+model_LRS.PE <- MCMCglmm(LRS ~ Sex,
+                      random = ~animal + dam + Born,
+                      ginv = list(animal = Ainv), 
+                      family="poisson", data = breeding_ped, 
+                      nitt = 65000, thin = 50, 
+                      burnin = 15000, prior = priorPE)
+
+# Model with parameter-expanded very weak/flat priors
+model_LRS.PEW <- MCMCglmm(LRS ~ Sex,
+                         random = ~animal + dam + Born,
+                         ginv = list(animal = Ainv), 
+                         family="poisson", data = breeding_ped, 
+                         nitt = 65000, thin = 50, 
+                         burnin = 15000, prior = priorPEW)
+
+# Save parameter-expanded model with flat priors
+saveRDS(model_LRS.PEW, file = "mcmc_LRS.rds")
 #------------------------------------------------------------------------------
 
 #---------------------------CHECK MODEL PLOTS----------------------------------
-model_LRS <- readRDS(file="output/mcmc_LRS.rds")
+model_LRS <- readRDS("output/mcmc_LRS.rds")
 
 #model summary-----------------------------------------------------------------
 summary(model_LRS)
@@ -273,7 +300,7 @@ model_LRS <- model_LRS
 # estimate means for random effects--------------------------------------------
 #JUST CHANGE which variance looking at in numerator (1-4)
 #1=animal/2=dam/3=cohort/4=residuals
-posterior.1<-model_LRS$VCV[,1]
+posterior.1<-model_LRS.PEW$VCV[,1]
 VX <- mean(posterior.1)   
 HPDinterval(posterior.1) ##highest posterior density/ credible interval
 standard_deviation <- sd(posterior.1) 
