@@ -50,15 +50,36 @@ epi_dat <- readRDS('output/WH_combined_ages.rds') %>%
                 list(sc = function(x) as.vector(scale(x, center = T)))))
 
 # 1 Model epigenetic acceleration ~ birth year ====
+
+# Scaled
 accel_born_mod <-  lm(AgeAccel_sc ~ Born_sc, data = epi_dat)
+# Unscaled for prediction
+accel_born_mod_unsc <-  lm(AgeAccel ~ Born, data = epi_dat)
+
+# Check how much faster a bear aged over its lifetime from 1960-2020
+# Predicted age acceleration in 1965
+pred_65 <- predict(accel_born_mod_unsc, data.frame(Born = 1965), se.fit = T)
+# Predicted age acceleration in 2020
+pred_20 <- predict(accel_born_mod_unsc, data.frame(Born = 2020), se.fit = T)
+# Difference in mean age acceleration
+delta_y <- pred_20$fit - pred_65$fit
+# Standard error of difference
+delta_se <- sqrt(pred_20$se.fit^2 + pred_65$se.fit^2)
+# 95% confidence interval
+delta_ci <- c(delta_y - 1.96 * delta_se, delta_y + 1.96 * delta_se)
 
 # 2 Model epigenetic acceleration ~ first repro ====
+
 accel_fr_mod <- lm(AgeAccel_sc ~ FirstRepro_sc, data = lh_epi_dat)
 
 # 3 Model lifetime reproductive success ~ age at first reproduction ====
-lrs_fr_mod <- MASS::glm.nb(LRS ~ FirstRepro*Born, data = lh_pop_dat)
 
-# Save models
+# Without scaled variables for plotting
+lrs_fr_mod <- MASS::glm.nb(LRS ~ FirstRepro*Born, data = lh_pop_dat)
+# Scaled
+lrs_fr_mod_sc <- MASS::glm.nb(LRS ~ FirstRepro_sc*Born_sc, data = lh_pop_dat)
+
+# 4 Save models ====
 saveRDS(accel_born_mod, 'models/accel_born_mod_lm.rds')
 saveRDS(accel_fr_mod, 'models/accel_fr_mod_lm.rds')
 saveRDS(lrs_fr_mod, 'models/lrs_fr_mod_nb_glm.rds')
