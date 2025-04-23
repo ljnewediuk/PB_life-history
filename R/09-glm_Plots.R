@@ -56,7 +56,7 @@ ggplot(data = epi_dat, aes(x = Born, y = AgeAccel)) +
         axis.title.y = element_text(size = 15, colour = 'black', vjust = 3),
         axis.title.x = element_text(size = 15, colour = 'black', vjust = -3),
         plot.margin = unit(c(0.25, 0.25, 0.75, 0.75), 'cm'),
-        panel.grid = element_blank()) +
+        panel.grid = element_line(linewidth = 0.5, colour = '#e5e5e5')) +
   xlab('Year of birth') + ylab('Age acceleration (years)')
 
 # Save plot
@@ -110,7 +110,7 @@ pred_dat %>%
         legend.background = element_rect(fill = NA, colour = NA),
         legend.box.background = element_rect(fill = NA, colour = NA),
         plot.margin = unit(c(0.25, 0.25, 0.75, 0.75), 'cm'),
-        panel.grid = element_blank()) +
+        panel.grid = element_line(linewidth = 0.5, colour = '#e5e5e5')) +
   xlab('Age at first reproduction') + ylab('Lifetime reproductive success')
 
 # Save plot
@@ -127,7 +127,7 @@ ggplot(data = lh_epi_dat, aes(x = FirstRepro, y = AgeAccel)) +
         axis.title.y = element_text(size = 15, colour = 'black', vjust = 3),
         axis.title.x = element_text(size = 15, colour = 'black', vjust = -3),
         plot.margin = unit(c(0.25, 0.25, 0.75, 0.75), 'cm'),
-        panel.grid = element_blank()) +
+        panel.grid = element_line(linewidth = 0.5, colour = '#e5e5e5')) +
   xlab('Age at first reproduction (years)') + ylab('Age acceleration (years)')
 
 # Save plot
