@@ -4,7 +4,7 @@
 # Load sample sheet, sample specs, transposed betas, then apply the clock to
 # predict new epigenetic ages and calculate residuals for age acceleration.
 
-ageNew <- function(batch_no, clock, failed_s) {
+ageNew <- function(batch_no, clock, failed_s, correct_ages = T, calc_accel = T) {
   
   # Load sample sheets for spatial bears
   sample_sheet <- readRDS(paste0('output/updated_sample_sheet_PB_array', 
@@ -40,36 +40,46 @@ ageNew <- function(batch_no, clock, failed_s) {
     right_join(sample_specs) %>%
     na.omit() %>%
     # Remove failed samples
-    filter(! Sample_Name %in% failed_QC)
+    filter(! Sample_Name %in% failed_s)
   
-  # Calculate age to 0.25 yrs, assigning a birth date of January 1 of year, 
-  # then get quarterly age by 3 mos.
-  birth_dates <- age_preds %>%
-    mutate(birth_date = as.Date(paste0(Born, '-01-01')),
-           AgeDays = as.numeric(difftime(YMD, birth_date, units = 'days')),
-           CorrectedAge = AgeDays/365,
-           CorrectedAgeQu = case_when(CorrectedAge - age <= 0.25 ~ age + 0.25,
-                                      CorrectedAge - age > 0.25 & 
-                                        CorrectedAge - age <= 0.5 ~ age + 0.5,
-                                      CorrectedAge - age > 0.5 & 
-                                        CorrectedAge - age <= 0.75 ~ age + 0.75,
-                                      CorrectedAge - age > 0.75 & 
-                                        CorrectedAge - age <= 0.99 ~ age + 1)) %>%
-    select(CorrectedAgeQu, Sample_Name) %>%
-    rename(Age = CorrectedAgeQu)
+  if(isTRUE(correct_ages)) {
+    # Calculate age to 0.25 yrs, assigning a birth date of January 1 of year, 
+    # then get quarterly age by 3 mos.
+    birth_dates <- age_preds %>%
+      mutate(birth_date = as.Date(paste0(Born, '-01-01')),
+             AgeDays = as.numeric(difftime(YMD, birth_date, units = 'days')),
+             CorrectedAge = AgeDays/365,
+             CorrectedAgeQu = case_when(CorrectedAge - age <= 0.25 ~ age + 0.25,
+                                        CorrectedAge - age > 0.25 & 
+                                          CorrectedAge - age <= 0.5 ~ age + 0.5,
+                                        CorrectedAge - age > 0.5 & 
+                                          CorrectedAge - age <= 0.75 ~ age + 0.75,
+                                        CorrectedAge - age > 0.75 & 
+                                          CorrectedAge - age <= 0.99 ~ age + 1)) %>%
+      select(CorrectedAgeQu, Sample_Name) %>%
+      rename(Age = CorrectedAgeQu)
+    
+    # Data frame with age acceleration (residuals of epi ~ chron age model)
+    age_preds <- age_preds %>%
+      filter(! is.na(age)) %>%
+      left_join(birth_dates) %>%
+      select(! age)
+  }
   
-  # Data frame with age acceleration (residuals of epi ~ chron age model)
-  age_preds <- age_preds %>%
-    filter(! is.na(age)) %>%
-    left_join(birth_dates) %>%
-    select(! age)
-  
-  age_accels <- age_preds %>%
-    cbind(AgeAccel = lm(age_preds$AgePredict ~ age_preds$Age)$residuals) %>%
-    rename(BearID = id, Sex = sex) %>%
-    relocate(AgePredict, .before = AgeAccel) %>%
-    select(! chip.ID.loc)
-  
-  return(age_accels)
+  if(isTRUE(calc_accel)) {
+    age_accels <- age_preds %>%
+      cbind(AgeAccel = lm(age_preds$AgePredict ~ age_preds$Age)$residuals) %>%
+      rename(BearID = id, Sex = sex) %>%
+      relocate(AgePredict, .before = AgeAccel) %>%
+      select(! chip.ID.loc)
+    
+    return(age_accels)
+    
+  } else {
+    
+    return(age_preds)
+    
+  }
+
   
 } 
