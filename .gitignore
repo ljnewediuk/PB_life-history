@@ -23,6 +23,15 @@ input/pedigree_27Mar2024.txt
 input/breeding.csv
 input/bear_capture_info.csv
 
+# Data and files from Czajka et al. 2024
+iscans/batch_black_bears/
+input/batch_black_bears_samples.rds
+input/PB_array_black_bears_sample_sheet_black_bears.rds
+output/updated_sample_sheet_PB_array_black_bears.rds
+output/tbetas_PB_array_black_bears.rds
+output/nbetas_PB_array_black_bears.rds
+output/detection_p_batch_black_bears.rds
+
 # Example code in package build process
 *-Ex.R
 
