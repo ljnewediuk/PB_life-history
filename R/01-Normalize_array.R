@@ -37,7 +37,7 @@ if(length(setdiff(bioc_packs, rownames(installed.packages()))) > 0) {
 }
 
 # Then install sesame and minfi developmental versions:
-dev_packs <- c('HorvathMammalMethylChip40manifest', 'HorvathMammalMethylChip40anno.test.unknown')
+dev_packs <- c('input/HorvathMammalMethylChip40manifest', 'input/HorvathMammalMethylChip40anno.test.unknown')
 # Install if one or either is not
 if(length(setdiff(dev_packs, rownames(installed.packages()))) > 0) {
   install.packages(paste0(dev_packs, '_0.2.2.tar.gz'), type = 'source', repos = NULL)
