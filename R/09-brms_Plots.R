@@ -64,17 +64,16 @@ group_by(Born) %>%
 
 # Plot age acceleration ~ birth year models (female and male models separately)
 ggplot(data = f_effects_accel_born, aes(x = Born, y = AgeAccel)) +
-  stat_lineribbon(.width = seq(from = .03, to = .975, by = .03),
-                  alpha = .1, size = 0, fill = '#677daf') +
+  stat_lineribbon(.width = 0.95, alpha = .5, fill = '#677daf', size = 0) +
   geom_line(data = accel_born_mean, colour = '#425d9c') +
   geom_point(data = epi_dat, aes(x = Born, y = AgeAccel), colour = '#425d9c', size = 3) +
   theme(panel.background = element_rect(colour = 'black', fill = 'white', linewidth = 1.25),
-        axis.text = element_text(size = 18, colour = 'black'),
-        axis.title.y = element_text(size = 18, colour = 'black', vjust = 3),
-        axis.title.x = element_text(size = 18, colour = 'black', vjust = -3),
+        axis.text = element_text(size = 15, colour = 'black'),
+        axis.title.y = element_text(size = 15, colour = 'black', vjust = 3),
+        axis.title.x = element_text(size = 15, colour = 'black', vjust = -3),
         legend.position = c(0.8, 0.15),
-        legend.text = element_text(size = 18, colour = 'black'),
-        legend.title = element_text(size = 18, colour = 'black'),
+        legend.text = element_text(size = 15, colour = 'black'),
+        legend.title = element_text(size = 15, colour = 'black'),
         legend.background = element_rect(fill = NA, colour = NA),
         legend.box.background = element_rect(fill = NA, colour = NA),
         plot.margin = unit(c(0.25, 0.25, 0.75, 0.75), 'cm'),
@@ -96,28 +95,25 @@ lrs_fr_means <- f_effects_lrs_fr %>%
 ggplot(f_effects_lrs_fr, aes(x = FirstRepro, y = value)) +
   geom_jitter(data = lh_pop_dat, aes(x = FirstRepro, y = LRS, colour = Born_sc), size = 3) +
   stat_lineribbon(data = f_effects_lrs_fr[f_effects_lrs_fr$Born == 1995,],
-                  .width = seq(from = .03, to = .975, by = .03),
-                  alpha = .1, size = 0, fill = '#193A82') +
+                  .width = 0.95, alpha = .5, size = 0, fill = '#193A82') +
   geom_line(data = lrs_fr_means[lrs_fr_means$Born == 1995,], colour = '#102A5C') +
   stat_lineribbon(data = f_effects_lrs_fr[f_effects_lrs_fr$Born == 1980,],
-                  .width = seq(from = .03, to = .975, by = .03),
-                  alpha = .1, size = 0, fill = '#6B84C0') +
+                  .width = 0.95, alpha = .5, size = 0, fill = '#6B84C0') +
   geom_line(data = lrs_fr_means[lrs_fr_means$Born == 1980,], colour = '#5268A0') +
   stat_lineribbon(data = f_effects_lrs_fr[f_effects_lrs_fr$Born == 1965,],
-                  .width = seq(from = .03, to = .975, by = .03),
-                  alpha = .1, size = 0, fill = '#BDD4FF') +
+                  .width = 0.95, alpha = .5, size = 0, fill = '#BDD4FF') +
   geom_line(data = lrs_fr_means[lrs_fr_means$Born == 1965,], colour = '#94A9CC') +
   scale_colour_gradient(low = '#BDD4FF', high = '#193A82',
                         breaks = c(-2.1, -0.4, 1.3), 
                         labels = c(1965, 1980, 1995),
                         name = 'Year born') +
   theme(panel.background = element_rect(colour = 'black', fill = 'white', linewidth = 1.25),
-        axis.text = element_text(size = 18, colour = 'black'),
-        axis.title.y = element_text(size = 18, colour = 'black', vjust = 3),
-        axis.title.x = element_text(size = 18, colour = 'black', vjust = -3),
+        axis.text = element_text(size = 15, colour = 'black'),
+        axis.title.y = element_text(size = 15, colour = 'black', vjust = 3),
+        axis.title.x = element_text(size = 15, colour = 'black', vjust = -3),
         legend.position = c(0.8, 0.7),
-        legend.text = element_text(size = 18, colour = 'black'),
-        legend.title = element_text(size = 18, colour = 'black'),
+        legend.text = element_text(size = 15, colour = 'black'),
+        legend.title = element_text(size = 15, colour = 'black', vjust = 5),
         legend.background = element_rect(fill = NA, colour = NA),
         legend.box.background = element_rect(fill = NA, colour = NA),
         plot.margin = unit(c(0.25, 0.25, 0.75, 0.75), 'cm'),
@@ -138,17 +134,16 @@ accel_fr_mean <- f_effects_accel_fr %>%
 # Plot age accel ~ first repro
 ggplot(f_effects_accel_fr, aes(x = FirstRepro, y = AgeAccel)) +
   stat_lineribbon(data = f_effects_accel_fr,
-                  .width = seq(from = .03, to = .975, by = .03),
-                  alpha = .1, size = 0, fill = '#6B84C0') +
+                  .width = 0.95, alpha = .5, size = 0, fill = '#6B84C0') +
   geom_line(data = accel_fr_mean, colour = '#425d9c') +
   geom_jitter(data = lh_epi_dat, aes(x = FirstRepro, y = AgeAccel), colour = '#425d9c', size = 3) +
   theme(panel.background = element_rect(colour = 'black', fill = 'white', linewidth = 1.25),
-        axis.text = element_text(size = 18, colour = 'black'),
-        axis.title.y = element_text(size = 18, colour = 'black', vjust = 3),
-        axis.title.x = element_text(size = 18, colour = 'black', vjust = -3),
+        axis.text = element_text(size = 15, colour = 'black'),
+        axis.title.y = element_text(size = 15, colour = 'black', vjust = 3),
+        axis.title.x = element_text(size = 15, colour = 'black', vjust = -3),
         legend.position = c(0.2, 0.2),
-        legend.text = element_text(size = 18, colour = 'black'),
-        legend.title = element_text(size = 18, colour = 'black'),
+        legend.text = element_text(size = 15, colour = 'black'),
+        legend.title = element_text(size = 15, colour = 'black'),
         legend.background = element_rect(fill = NA, colour = NA),
         legend.box.background = element_rect(fill = NA, colour = NA),
         plot.margin = unit(c(0.25, 0.25, 0.75, 0.75), 'cm'),
