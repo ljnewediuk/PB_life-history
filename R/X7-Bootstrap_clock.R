@@ -1,6 +1,7 @@
 
 library(tidyverse)
 library(glmnet)
+library(brms)
 
 # 1 Load data and source functions ====
 
@@ -106,30 +107,41 @@ while(it <= 500) {
     summarize(Born = mean(Born), AgeAccel = mean(AgeAccel))
   
   # Fit model age acceleration ~ year of birth
-  m <-  lm(AgeAccel ~ Born, data = age_accels)
+  m <-  brm(AgeAccel ~ Born,
+            data = age_accels, family = gaussian, 
+            iter = 10000, warmup = 5000, chains = 4, cores = 4, 
+            prior = prior(normal(0,1), class = b),
+            control = list(adapt_delta = 0.99, max_treedepth = 20),
+            backend = 'cmdstanr')
   
   # Predict across range of birth years (1965-2021)
   # New data
-  nd <- data.frame(Born = seq(from = 1965, to = 2021, length.out = 100))
+  nd <- data.frame(Born = 1965:2021)
+  fitted_m <- fitted(m, probs = c(0.025, 0.975), newdata = nd, summary = F) %>%
+    # Make data frame and pivot
+    data.frame() %>%
+    pivot_longer(everything()) %>%
+    bind_cols(expand_grid(draws = 1:20000, nd)) %>%
+    group_by(Born) %>%
+    # Summarize mean age accel ~ birth year
+    summarize(AgeAccel = mean(value)) %>%
+    mutate(iteration = it) %>% relocate(iteration)
   
-  pred_m_row <- data.frame(iteration = it,
-                           Born = nd$Born, 
-                           AgeAccel = predict(m, newdata = nd))
-  
-  # Pull out coefficients
-  b <- m$coefficients[2]
+  # Pull out posterior draws
+  b <- as.data.frame(m) %>%
+    pull(b_Born)
   
   # Add metrics and posterior draws to growing objects
   if(it == 1) {
     # Posterior draws
-    b_dist <- b
+    b_draws <- b
     # Posterior predictive mean age accel ~ birth year relationship
-    b_preds <- pred_m_row
+    b_preds <- fitted_m
     # Clock metrics
     mets <- data.frame(iteration = 1, MAE, corr, N = nrow(meth_betas_train))
   } else {
-    b_dist <- c(b_dist, b)
-    b_preds <- bind_rows(b_preds, pred_m_row)
+    b_draws <- c(b_draws, b)
+    b_preds <- bind_rows(b_preds, fitted_m)
     mets <- mets %>%
       bind_rows(data.frame(iteration = it, MAE, corr, N = nrow(meth_betas_train)))
   }
@@ -156,8 +168,8 @@ mean(mets$corr)
 quantile(mets$corr, c(0.025, 0.975))
 
 # Mean and credible intervals of age acceleration ~ birth year slope
-mean(b_dist)
-quantile(b_dist, c(0.025, 0.975))
+mean(b_draws)
+quantile(b_draws, c(0.025, 0.975))
 
 # 6 Plot the posterior predictions ====
 
