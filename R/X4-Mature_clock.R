@@ -135,14 +135,45 @@ model_dat <- age_accel %>%
   mutate(across(c(AgeAccel, Born), 
                 list(sc = function(x) as.vector(scale(x, center = T)))))
 
-accel_mod  <- lm(AgeAccel_sc ~ Born_sc, data = model_dat)
+accel_mod  <- brm(AgeAccel_sc ~ Born_sc,
+                       data = model_dat, family = gaussian, 
+                       iter = 10000, warmup = 5000, chains = 4, cores = 4, 
+                       prior = prior(normal(0,1), class = b),
+                       control = list(adapt_delta = 0.99, max_treedepth = 20),
+                       backend = 'cmdstanr')
+
+# Make new data for predicting
+nd_accel_born <- expand_grid(
+  Born_sc = seq(from = min(model_dat$Born_sc), 
+                to = max(model_dat$Born_sc),
+                by = 0.05))
+
+# Extract fitted values
+f_accel <- fitted(accel_mod,
+                  newdata = nd_accel_born,
+                  probs = c(0.025, 0.975),
+                  summary = F) %>%
+  data.frame() %>%
+  # Pivot
+  pivot_longer(everything()) %>%
+  bind_cols(expand_grid(draws = 1:20000, nd_accel_born)) %>%
+  # Rename and unscale
+  mutate(Born = Born_sc * sd(model_dat$Born) + mean(model_dat$Born),
+         AgeAccel = value * sd(model_dat$AgeAccel) + mean(model_dat$AgeAccel)) %>%
+  select(Born, AgeAccel)
+
+# Get posterior mean for plot
+accel_mean <- f_accel %>%
+  group_by(Born) %>%
+  summarize(AgeAccel = mean(AgeAccel))
 
 # 8 - Plot age acceleration ~ birth year model and facet ====
 
 # Get mean of posterior for age accel of F & M in accel ~ born models
 accel_plot <- age_accel %>%
   ggplot(aes(x = Born, y = AgeAccel)) +
-  stat_smooth(method = 'lm', linewidth = 0.5, fill = '#425d9c50', color = '#425d9c') +
+  stat_lineribbon(data = f_accel, .width = 0.95, alpha = .5, fill = '#677daf', size = 0) +
+  geom_line(data = accel_mean, colour = '#425d9c') +
   geom_point(colour = '#425d9c', size = 3) +
   theme(plot.margin = unit(c(1, 0.5, 1, 2), 'cm'),
         panel.background = element_rect(fill = 'white', colour = 'black'),

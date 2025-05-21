@@ -2,6 +2,7 @@
 library(tidyverse)
 library(EnvStats)
 library(cowplot)
+library(brms)
 
 # Load capture data and select bear IDs and aging technique
 capt_dat <- read.csv('input/bear_capture_info.csv') %>%
@@ -23,27 +24,54 @@ outlier_rows <- rosnerTest(epi_dat$AgeAccel)$all.stats$Obs.Num
 # Exclude suspected outliers from the dataset and re-run the model
 sub_epi_dat <- epi_dat[-outlier_rows ,]
 
-# Original model
-accel_born_mod <-  lm(AgeAccel_sc ~ Born_sc, data = epi_dat)
+# Original model and fitted effects
+accel_born_mod <- readRDS('models/accel_born_mod.rds')
+f_accel_born <- readRDS('output/f_effects_accel_born.rds')
 
 # Without suspected outliers 
-accel_born_mod_no <-  lm(AgeAccel_sc ~ Born_sc, data = sub_epi_dat)
+accel_born_mod_no <-  brm(AgeAccel_sc ~ Born_sc,
+                          data = sub_epi_dat, family = gaussian, 
+                          iter = 10000, warmup = 5000, chains = 4, cores = 4, 
+                          prior = prior(normal(0,1), class = b),
+                          control = list(adapt_delta = 0.99, max_treedepth = 20),
+                          backend = 'cmdstanr')
+
+# Make new data for predicting
+nd_accel_born <- expand_grid(
+  Born_sc = seq(from = min(sub_epi_dat$Born_sc), 
+                to = max(sub_epi_dat$Born_sc),
+                by = 0.05))
+
+# Extract fitted values
+f_accel_born_no <- fitted(accel_born_mod_no,
+                       newdata = nd_accel_born,
+                       probs = c(0.025, 0.975),
+                       summary = F) %>%
+  data.frame() %>%
+  # Pivot
+  pivot_longer(everything()) %>%
+  bind_cols(expand_grid(draws = 1:20000, nd_accel_born)) %>%
+  # Rename and unscale
+  mutate(Born = Born_sc * sd(epi_dat$Born) + mean(epi_dat$Born),
+         AgeAccel = value * sd(epi_dat$AgeAccel) + mean(epi_dat$AgeAccel)) %>%
+  select(Born, AgeAccel)
 
 # Subset only the outliers and join aging technique
 epi_outliers <- epi_dat[outlier_rows ,] %>%
   left_join(capt_dat) %>%
-  select(BearID, AQual) %>%
+  select(BearID, AQual, Born, AgeAccel) %>%
   distinct()
 
 # Plot the relationship with the outliers highlighted, and excluded in a different panel
 
 # Panel A - outliers highlighted
 p_outliers <- ggplot(data = epi_dat, aes(x = Born, y = AgeAccel)) +
-  stat_smooth(method = 'lm', linewidth = 0.5, fill = '#425d9c50', color = '#425d9c') +
+  stat_lineribbon(data = f_accel_born, .width = 0.95, alpha = .5, fill = '#677daf', size = 0) +
+  geom_line(data = summarize(group_by(f_accel_born, Born), AgeAccel = mean(AgeAccel)), colour = '#425d9c') +
   geom_point(colour = '#425d9c', size = 3) +
   geom_point(data = epi_outliers, colour = 'red') +
   theme(panel.background = element_rect(colour = 'black', fill = 'white', linewidth = 1.25),
-        axis.text = element_text(size = 15, colour = 'black'),
+        axis.text = element_text(size = 18, colour = 'black'),
         axis.title = element_blank(),
         plot.margin = unit(c(0.25, 0.25, 0.75, 0.75), 'cm'),
         panel.grid = element_line(linewidth = 0.5, colour = '#e5e5e5')) +
@@ -52,10 +80,11 @@ p_outliers <- ggplot(data = epi_dat, aes(x = Born, y = AgeAccel)) +
 
 # Panel B - outliers removed
 p_no_outliers <- ggplot(data = sub_epi_dat, aes(x = Born, y = AgeAccel)) +
-  stat_smooth(method = 'lm', linewidth = 0.5, fill = '#425d9c50', color = '#425d9c') +
+  stat_lineribbon(data = f_accel_born_no, .width = 0.95, alpha = .5, fill = '#677daf', size = 0) +
+  geom_line(data = summarize(group_by(f_accel_born_no, Born), AgeAccel = mean(AgeAccel)), colour = '#425d9c') +
   geom_point(colour = '#425d9c', size = 3) +
   theme(panel.background = element_rect(colour = 'black', fill = 'white', linewidth = 1.25),
-        axis.text = element_text(size = 15, colour = 'black'),
+        axis.text = element_text(size = 18, colour = 'black'),
         axis.title = element_blank(),
         plot.margin = unit(c(0.25, 0.25, 0.75, 0.75), 'cm'),
         panel.grid = element_line(linewidth = 0.5, colour = '#e5e5e5')) +

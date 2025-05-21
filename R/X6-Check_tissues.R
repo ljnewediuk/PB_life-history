@@ -8,6 +8,7 @@
 
 library(tidyverse)
 library(ggdist)
+library(brms)
 
 # 1 Load data ====
 
@@ -35,12 +36,21 @@ sex_dat <- epi_dat %>%
 
 # 3 Fit models with tissue and sex ====
 
-# Model age acceleration ~ year for skin only
-tissue_m <- lm(AgeAccel_sc ~ Born_sc*Spec, data = tissue_dat)
+# Model age acceleration ~ year for tissue
+tissue_m <- brm(AgeAccel_sc ~ Born_sc*Spec,
+                data = tissue_dat, family = gaussian, 
+                iter = 10000, warmup = 5000, chains = 4, cores = 4, 
+                prior = prior(normal(0,1), class = b),
+                control = list(adapt_delta = 0.99, max_treedepth = 20),
+                backend = 'cmdstanr')
 
-# Model age acceleration ~ year for blood only
-# Weak effect... but sample size is really small
-sex_m <- lm(AgeAccel_sc ~ Born_sc*Sex, data = sex_dat)
+# Model age acceleration ~ year for sex
+sex_m <- brm(AgeAccel_sc ~ Born_sc*Sex,
+             data = sex_dat, family = gaussian, 
+             iter = 10000, warmup = 5000, chains = 4, cores = 4, 
+             prior = prior(normal(0,1), class = b),
+             control = list(adapt_delta = 0.99, max_treedepth = 20),
+             backend = 'cmdstanr')
 
 # 4 Check agreement between blood and skin samples ====
 
@@ -77,15 +87,52 @@ ggsave('blood_skin_agreement.tiff', plot = last_plot(), path = 'figures/suppleme
 
 # 5 Plot age ~ birth year model with effects for tissue ====
 
-ggplot(tissue_dat, aes(x = Born, y = AgeAccel)) +
-  stat_smooth(method = 'lm', linewidth = 0.5, aes(fill = Spec, color = Spec)) +
-  geom_point(aes(colour = Spec), size = 3) +
-  scale_fill_manual(values = c('#d62d20', '#536878')) +
-  scale_color_manual(values = c('#d62d20', '#536878')) +
+nd_tissue <- expand_grid(Spec = c('Blood', 'Skin'),
+                         Born_sc = seq(from = min(tissue_dat$Born_sc), 
+                                       to = max(tissue_dat$Born_sc),
+                                       by = 0.05))
+
+f_tissue <- fitted(tissue_m,
+                   newdata = nd_tissue,
+                   probs = c(0.025, 0.975),
+                   summary = F) %>%
+  data.frame() %>%
+  # Pivot
+  pivot_longer(everything()) %>%
+  bind_cols(expand_grid(draws = 1:20000, nd_tissue)) %>%
+  # Rename and unscale
+  mutate(Born = Born_sc * sd(tissue_dat$Born) + mean(tissue_dat$Born),
+         AgeAccel = value * sd(tissue_dat$AgeAccel) + mean(tissue_dat$AgeAccel)) %>%
+  select(Spec, Born, AgeAccel) %>%
+  # Split by tissue
+  group_by(Spec) %>%
+  group_split()
+
+# Get means of posterior for lines
+line_bl <- f_tissue[[1]] %>%
+  group_by(Born) %>%
+  summarize(AgeAccel = mean(AgeAccel))
+
+line_sk <- f_tissue[[2]] %>%
+  group_by(Born) %>%
+  summarize(AgeAccel = mean(AgeAccel))
+
+# Plot
+ggplot(f_tissue[[1]], aes(x = Born, y = AgeAccel)) +
+  stat_lineribbon(data = f_tissue[[1]],
+                  .width = 0.95,
+                  alpha = .5, size = 0, fill = 'red') +
+  stat_lineribbon(data = f_tissue[[2]],
+                  .width = 0.95,
+                  alpha = .5, size = 0, fill = 'grey') +
+  geom_line(data = line_bl, colour = '#d62d20') +
+  geom_line(data = line_sk, colour = '#536878') +
+  scale_colour_manual(values = c('#d62d20', '#536878'), name = 'Tissue type') +
+  geom_jitter(data = tissue_dat, aes(x = Born, y = AgeAccel, colour = Spec), size = 3) +
   theme(panel.background = element_rect(colour = 'black', fill = 'white', linewidth = 1.25),
-        axis.text = element_text(size = 18, colour = 'black'),
-        axis.title.y = element_text(size = 18, colour = 'black', vjust = 3),
-        axis.title.x = element_text(size = 18, colour = 'black', vjust = -3),
+        axis.text = element_text(size = 15, colour = 'black'),
+        axis.title.y = element_text(size = 15, colour = 'black', vjust = 3),
+        axis.title.x = element_text(size = 15, colour = 'black', vjust = -3),
         legend.position = 'none',
         plot.margin = unit(c(0.25, 0.25, 0.75, 0.75), 'cm'),
         panel.grid = element_line(linewidth = 0.5, colour = '#e5e5e5')) +
@@ -97,15 +144,51 @@ ggsave('accel_born_tissue_plot.tiff', plot = last_plot(), path = 'figures/supple
 
 # 6 Plot age ~ birth year model with effects for sex ====
 
-ggplot(sex_dat, aes(x = Born, y = AgeAccel)) +
-  stat_smooth(method = 'lm', linewidth = 0.5, aes(fill = Sex, color = Sex)) +
-  geom_point(aes(colour = Sex), size = 3) +
-  scale_fill_manual(values = c('#f15097', '#5097f1')) +
-  scale_color_manual(values = c('#f15097', '#5097f1')) +
+nd_sex <- expand_grid(Sex = c('F', 'M'),
+                         Born_sc = seq(from = min(sex_dat$Born_sc), 
+                                       to = max(sex_dat$Born_sc),
+                                       by = 0.05))
+
+# Extract fitted values
+f_sex <- fitted(sex_m,
+                newdata = nd_sex,
+                probs = c(0.025, 0.975),
+                summary = F) %>%
+  data.frame() %>%
+  # Pivot
+  pivot_longer(everything()) %>%
+  bind_cols(expand_grid(draws = 1:20000, nd_sex)) %>%
+  # Rename and unscale
+  mutate(Born = Born_sc * sd(sex_dat$Born) + mean(sex_dat$Born),
+         AgeAccel = value * sd(sex_dat$AgeAccel) + mean(sex_dat$AgeAccel)) %>%
+  select(Sex, Born, AgeAccel) %>%
+  # Split by tissue
+  group_by(Sex) %>%
+  group_split()
+
+# Get means of posterior for lines
+line_F <- f_sex[[1]] %>%
+  group_by(Born) %>%
+  summarize(AgeAccel = mean(AgeAccel))
+
+line_M <- f_sex[[2]] %>%
+  group_by(Born) %>%
+  summarize(AgeAccel = mean(AgeAccel))
+
+# Plot
+ggplot(f_sex[[1]], aes(x = Born, y = AgeAccel)) +
+  stat_lineribbon(data = f_sex[[1]], .width = 0.95,
+                  alpha = .5, size = 0, fill = '#f78ab5') +
+  stat_lineribbon(data = f_sex[[2]], .width = 0.95,
+                  alpha = .5, size = 0, fill = '#85b5f7') +
+  geom_line(data = line_F, colour = '#f15097') +
+  geom_line(data = line_M, colour = '#5097f1') +
+  scale_colour_manual(values = c('#f15097', '#5097f1'), name = 'Tissue type') +
+  geom_jitter(data = sex_dat, aes(x = Born, y = AgeAccel, colour = Sex), size = 3) +
   theme(panel.background = element_rect(colour = 'black', fill = 'white', linewidth = 1.25),
-        axis.text = element_text(size = 18, colour = 'black'),
-        axis.title.y = element_text(size = 18, colour = 'black', vjust = 3),
-        axis.title.x = element_text(size = 18, colour = 'black', vjust = -3),
+        axis.text = element_text(size = 15, colour = 'black'),
+        axis.title.y = element_text(size = 15, colour = 'black', vjust = 3),
+        axis.title.x = element_text(size = 15, colour = 'black', vjust = -3),
         legend.position = 'none',
         plot.margin = unit(c(0.25, 0.25, 0.75, 0.75), 'cm'),
         panel.grid = element_line(linewidth = 0.5, colour = '#e5e5e5')) +
