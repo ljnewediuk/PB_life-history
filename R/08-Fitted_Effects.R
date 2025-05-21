@@ -139,9 +139,9 @@ age_diff_sc <- fitted(accel_born_mod,
 # Unscale
 age_diff <- age_diff_sc * sd(epi_dat$AgeAccel) + mean(epi_dat$AgeAccel)
 
-# Get mean and IQR
+# Get mean and 95% percentile
 mean(age_diff)
-IQR(age_diff)
+quantile(age_diff, c(0.025, 0.975))
 
 # 6 Save fitted effects ====
 
