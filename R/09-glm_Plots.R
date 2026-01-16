@@ -63,6 +63,10 @@ ggplot(data = epi_dat, aes(x = Born, y = AgeAccel)) +
 ggsave('accel_born_plot.tiff', plot = last_plot(), path = 'figures/main/', 
        device = 'tiff', dpi = 300, height = 12, width = 14, units = 'cm', bg = 'white')
 
+# Save as svg
+ggsave('accel_born_plot.svg', plot = last_plot(), path = 'figures/presentation/', 
+       device = 'svg', dpi = 300, height = 12, width = 14, units = 'cm', bg = 'white')
+
 # 3 Plot lifetime reproductive success on year of first reproduction ====
 
 # Make new data for predicted distributions (to show relationship for different
