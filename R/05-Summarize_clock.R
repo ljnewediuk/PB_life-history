@@ -119,6 +119,17 @@ ID_panels <- plot_grid(plotlist = ID_plots, labels = LETTERS[2:6],
 clock_plot <- plotClock(epi_ages, alpha_col = T) 
 clock_w_label <- plot_grid(clock_plot, labels = 'A', label_size = 22, ncol = 1)
 
+# Plot just clock and save
+clock_plot + 
+  theme(plot.margin = unit(c(0.25, 0.25, 1, 1), 'cm'),
+    axis.title.x = element_text(size = 18, colour = 'black', vjust = -5),
+        axis.title.y = element_text(size = 18, colour = 'black', vjust = 5)) +
+  labs(y = 'Epigenetic age (years)', x = 'Chronological age (years)')
+
+# Save plot (as svg)
+ggsave('clock_plot_white.svg', plot = last_plot(), path = 'figures/presentation/', 
+       device = 'svg', dpi = 300, height = 15, width = 15, units = 'cm', bg = 'white')
+
 # Plot panels
 clock_panel <- plot_grid(clock_w_label, ID_panels, ncol = 2, rel_widths = c(1, 0.5))
 
