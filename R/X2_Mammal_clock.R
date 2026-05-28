@@ -300,3 +300,8 @@ accel_born_uc3_mod <-  brm(AccelClock3_sc ~ Born_sc + Sex + (Born_sc + Sex | Bea
                            prior = prior(normal(0,1), class = b),
                            control = list(adapt_delta = 0.99, max_treedepth = 20),
                            backend = 'cmdstanr')
+
+# 8 Save predictions ====
+
+saveRDS(output, "output/UC_clock_predictions.rds")
+
