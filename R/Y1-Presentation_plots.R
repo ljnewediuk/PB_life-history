@@ -5,6 +5,20 @@ library(tidyverse)
 UC_preds <- readRDS("output/UC_clock_predictions.rds")
 WH_preds <- readRDS("output/WH_combined_ages.rds")
 
+# Function to print MAE and correlation for either clock
+print_accuracy <- function(df, age, pred) {
+  clock.mae <- ie2misc::mae(df[[pred]], df[[age]])
+  clock.corr <- cor.test(df[[pred]], df[[age]])$estimate
+  cat('MAE: ', clock.mae, ' ; ', 'correlation: ', clock.corr)
+}
+
+# Assess accuracy of UC clocks
+print_accuracy(df = UC_preds, pred = 'DNAmAgeClock2', age = 'Age')
+print_accuracy(df = UC_preds, pred = 'DNAmAgeClock3', age = 'Age')
+
+# Assess accuracy of western Hudson Bay clock
+print_accuracy(df = WH_preds, pred = 'AgePredict', age = 'Age')
+
 # Plot UC clock 3
 ggplot(UC_preds, aes(x = Age, y = DNAmAgeClock3)) +
   geom_abline(intercept = 0, slope = 1, colour = "#E8E8E8", alpha = 0.5) +
