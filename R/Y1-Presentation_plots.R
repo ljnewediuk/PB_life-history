@@ -41,7 +41,7 @@ ggplot(UC_preds, aes(x = Age, y = DNAmAgeClock3)) +
 # Save the plot
 ggsave("figures/presentation/UC_clock3.svg", device = "svg", width = 15, height = 13, units = "cm")
 
-# Plot the WH clock
+# Plot the WH clock (axes same as UC clock)
 ggplot(WH_preds, aes(x = Age, y = AgePredict)) +
   geom_abline(intercept = 0, slope = 1, colour = "#E8E8E8", alpha = 0.5) +
   geom_point(colour = "#E8E8E8", size = 2) +
@@ -57,6 +57,7 @@ ggplot(WH_preds, aes(x = Age, y = AgePredict)) +
         strip.background = element_rect(fill = "#32404A"),
         strip.text = element_text(colour = '#E8E8E8', size = 18),
         legend.position = "None") +
+  ylim(0, 50) +
   labs(x = "Chronological age", y = "Epigenetic age")
 
 # Save the plot
